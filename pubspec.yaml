@@ -56,7 +56,7 @@ flutter:
 
   # Ini adalah folder aset yang sudah kamu daftarkan (Sekarang sudah di tempat yang benar!)
   assets:
-    - assets/logo.jpeg
+    - assets/logo.png
     - assets/google.png
     
 
