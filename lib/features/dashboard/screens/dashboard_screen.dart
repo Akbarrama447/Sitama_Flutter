@@ -1,6 +1,12 @@
 import 'package:flutter/material.dart';
-// imports trimmed: dashboard doesn't directly use storageService or LoginScreen anymore
+import '../../../main.dart'; // Untuk akses storageService
+import '../../auth/screens/login_screen.dart'; // Untuk halaman login
+
+// --- IMPORT TAB PROFIL KITA ---
 import '../../profile/screens/profile_tab.dart';
+
+// TODO: Nanti kita import tab TA di sini
+// import '../../tugas_akhir/screens/tugas_akhir_tab.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -10,87 +16,123 @@ class DashboardScreen extends StatefulWidget {
 }
 
 class _DashboardScreenState extends State<DashboardScreen> {
-  int _selectedIndex = 0; // State untuk melacak tab mana yang aktif
+  int _selectedIndex = 0; // Halaman yang sedang aktif
 
-  // --- FUNGSI LOGOUT SEKARANG PINDAH KE 'profile_tab.dart' ---
-  // --- KITA BISA HAPUS FUNGSI _logout DARI SINI ---
-  // Future<void> _logout() async { ... } // <-- HAPUS BLOK INI
-
-  static const List<Widget> _widgetOptions = <Widget>[
+  // --- REVISI 1: Hapus 'Halaman Jadwal' ---
+  // Daftar halaman/tab yang akan ditampilkan (sekarang jadi 3)
+  // Jangan gunakan `const` di sini karena `ProfileTab()` kemungkinan bukan const.
+  static final List<Widget> _widgetOptions = <Widget>[
+    // Index 0: Home
     const Center(
-      child: Text('Halaman Home (Index 0)'),
+      child: Text('Halaman Home'),
     ),
+    // Index 1: Tugas Akhir
     const Center(
-      child: Text('Halaman Jadwal (Index 1)'),
+      child: Text('Halaman TA'),
+      // TODO: Nanti ganti ini dengan:
+      // TugasAkhirTab(),
     ),
-    const Center(
-      child: Text('Halaman TA (Index 2)'),
-    ),
-    const ProfileTab(), // Halaman Profil baru kita
+    // Index 2: Profil
+    ProfileTab(),
   ];
 
+  // Fungsi untuk pindah tab
   void _onItemTapped(int index) {
     setState(() {
       _selectedIndex = index;
     });
   }
 
+  // Fungsi logout (tetap sama)
+  void _logout() async {
+    await storageService.deleteToken();
+    if (mounted) {
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(builder: (context) => const LoginScreen()),
+        (route) => false,
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    const List<String> appBarTitles = [
-      'Home',
-      'Jadwal',
-      'Tugas Akhir',
-      'Profil Mahasiswa', // Judul ini GAK AKAN KEPAMPIL, tapi biarin aja
-    ];
-
     return Scaffold(
-      // --- PERUBAHAN UTAMA DI SINI ---
-      // Bikin AppBar jadi null (hilang) kalo lagi di tab Profil (index 3)
-      appBar: _selectedIndex == 3
-          ? null // <-- HILANGKAN APPBAR UNTUK PROFIL
+      // --- REVISI 2: Logika AppBar diubah ke index 2 ---
+      // Tampilkan AppBar di semua halaman KECUALI Halaman Profil (Index 2)
+      appBar: _selectedIndex == 2
+          ? null // Jangan tampilkan AppBar di Halaman Profil
           : AppBar(
-              title: Text(appBarTitles[_selectedIndex]),
-              backgroundColor: Theme.of(context).colorScheme.primary,
-              foregroundColor: Theme.of(context).colorScheme.onPrimary,
-              // Kita pindahin tombol logout ke halaman profil
-              // jadi 'actions' di sini bisa dikosongin
-              actions: const [],
+              title: const Text('SISTEM TA'),
+              backgroundColor: const Color(0xFF1565C0),
+              titleTextStyle: const TextStyle(
+                color: Colors.white,
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+              ),
+              iconTheme: const IconThemeData(color: Colors.white),
+              actions: [
+                // Tombol logout HANYA muncul di AppBar
+                // (di halaman profil, tombol logout ada di dalam halaman)
+                IconButton(
+                  icon: const Icon(Icons.logout),
+                  onPressed: _logout,
+                  tooltip: 'Logout',
+                ),
+              ],
             ),
-      // --- BATAS PERUBAHAN ---
-
       body: Center(
         child: _widgetOptions.elementAt(_selectedIndex),
       ),
-      bottomNavigationBar: BottomNavigationBar(
-        items: const <BottomNavigationBarItem>[
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home_outlined),
-            activeIcon: Icon(Icons.home),
-            label: 'Home',
+      bottomNavigationBar: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: const BorderRadius.only(
+            topLeft: Radius.circular(25),
+            topRight: Radius.circular(25),
           ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.description_outlined), // Ganti ikon
-            activeIcon: Icon(Icons.description),
-            label: 'Jadwal', // Ganti label (sesuai desainmu)
+          boxShadow: [
+            BoxShadow(
+              color: Colors.grey.withOpacity(0.3),
+              spreadRadius: 2,
+              blurRadius: 10,
+            ),
+          ],
+        ),
+        child: ClipRRect(
+          borderRadius: const BorderRadius.only(
+            topLeft: Radius.circular(25),
+            topRight: Radius.circular(25),
           ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.school_outlined), // Ganti ikon
-            activeIcon: Icon(Icons.school),
-            label: 'Tugas Akhir', // Ganti label
+          child: BottomNavigationBar(
+            // --- REVISI 3: Hapus item 'Jadwal' ---
+            // Daftar tombol di navbar (sekarang jadi 3)
+            items: const <BottomNavigationBarItem>[
+              BottomNavigationBarItem(
+                icon: Icon(Icons.home_outlined),
+                activeIcon: Icon(Icons.home),
+                label: 'Home',
+              ),
+              BottomNavigationBarItem(
+                icon: Icon(Icons.school_outlined), // Ikon TA
+                activeIcon: Icon(Icons.school),
+                label: 'TA',
+              ),
+              BottomNavigationBarItem(
+                icon: Icon(Icons.person_outline),
+                activeIcon: Icon(Icons.person),
+                label: 'Profil',
+              ),
+            ],
+            currentIndex: _selectedIndex,
+            selectedItemColor: const Color(0xFF1565C0), // Warna ikon aktif
+            unselectedItemColor: Colors.grey, // Warna ikon non-aktif
+            onTap: _onItemTapped,
+            backgroundColor: Colors.white,
+            showSelectedLabels: true, // Tampilkan label
+            showUnselectedLabels: false, // Sembunyikan label non-aktif
+            elevation: 0, // Hapus bayangan default (kita pakai custom)
           ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.person_outline),
-            activeIcon: Icon(Icons.person),
-            label: 'Profil',
-          ),
-        ],
-        currentIndex: _selectedIndex,
-        selectedItemColor: Theme.of(context).colorScheme.primary,
-        unselectedItemColor: Colors.grey[600],
-        showUnselectedLabels: true,
-        onTap: _onItemTapped,
-        type: BottomNavigationBarType.fixed,
+        ),
       ),
     );
   }
