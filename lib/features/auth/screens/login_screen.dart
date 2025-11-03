@@ -47,8 +47,13 @@ class _LoginScreenState extends State<LoginScreen> {
       if (response.statusCode == 200 && responseBody['token'] != null) {
         // --- SUKSES LOGIN ---
         final token = responseBody['token'];
-        // Simpan token ke "brankas"
-        await storageService.saveToken(token);
+          final userData = responseBody['user'];
+        
+          // Simpan token dan nama user ke storage
+          await storageService.saveToken(token);
+          if (userData != null && userData['nama'] != null) {
+            await storageService.saveUserName(userData['nama']);
+          }
 
         // Pindah ke Dashboard
         if (mounted) {

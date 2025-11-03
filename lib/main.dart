@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:intl/date_symbol_data_local.dart';
 import 'features/auth/screens/login_screen.dart';
 import 'features/dashboard/screens/dashboard_screen.dart';
 import 'core/services/storage_service.dart'; // Import service kita
@@ -12,6 +14,9 @@ void main() async {
   // Pastikan semua widget siap sebelum app jalan
   WidgetsFlutterBinding.ensureInitialized();
 
+  // Inisialisasi localization untuk format tanggal
+  await initializeDateFormatting('id_ID', null);
+  
   // Inisialisasi service penyimpanan
   final prefs = await SharedPreferences.getInstance();
   storageService = StorageService(prefs);
@@ -36,6 +41,16 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'Aplikasi Mahasiswa',
       debugShowCheckedModeBanner: false,
+      localizationsDelegates: const [
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      supportedLocales: const [
+        Locale('id', 'ID'), // Indonesian
+        Locale('en', 'US'), // English
+      ],
+      locale: const Locale('id', 'ID'), // Set Indonesian as default
       theme: ThemeData(
         colorScheme: kColorScheme,
         useMaterial3: true,

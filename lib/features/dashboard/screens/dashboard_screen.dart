@@ -2,11 +2,10 @@ import 'package:flutter/material.dart';
 import '../../../main.dart'; // Untuk akses storageService
 import '../../auth/screens/login_screen.dart'; // Untuk halaman login
 
-// --- IMPORT TAB PROFIL KITA ---
+// --- IMPORT TAB KITA ---
 import '../../profile/screens/profile_tab.dart';
-
-// TODO: Nanti kita import tab TA di sini
-// import '../../tugas_akhir/screens/tugas_akhir_tab.dart';
+import '../../home/screens/home_tab.dart'; // <-- BARU
+import '../../tugas_akhir/screens/tugas_akhir_tab.dart'; // <-- BARU
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -18,20 +17,14 @@ class DashboardScreen extends StatefulWidget {
 class _DashboardScreenState extends State<DashboardScreen> {
   int _selectedIndex = 0; // Halaman yang sedang aktif
 
-  // --- REVISI 1: Hapus 'Halaman Jadwal' ---
-  // Daftar halaman/tab yang akan ditampilkan (sekarang jadi 3)
-  // Jangan gunakan `const` di sini karena `ProfileTab()` kemungkinan bukan const.
+  // --- REVISI: GANTI PLACEHOLDER DENGAN WIDGET ASLI ---
   static final List<Widget> _widgetOptions = <Widget>[
     // Index 0: Home
-    const Center(
-      child: Text('Halaman Home'),
-    ),
+    const HomeTab(), // <-- DIGANTI
+
     // Index 1: Tugas Akhir
-    const Center(
-      child: Text('Halaman TA'),
-      // TODO: Nanti ganti ini dengan:
-      // TugasAkhirTab(),
-    ),
+    const TugasAkhirTab(), // <-- DIGANTI
+
     // Index 2: Profil
     ProfileTab(),
   ];
@@ -57,8 +50,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // --- REVISI 2: Logika AppBar diubah ke index 2 ---
-      // Tampilkan AppBar di semua halaman KECUALI Halaman Profil (Index 2)
+      // Logika AppBar (tetap sama)
       appBar: _selectedIndex == 2
           ? null // Jangan tampilkan AppBar di Halaman Profil
           : AppBar(
@@ -71,8 +63,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
               ),
               iconTheme: const IconThemeData(color: Colors.white),
               actions: [
-                // Tombol logout HANYA muncul di AppBar
-                // (di halaman profil, tombol logout ada di dalam halaman)
                 IconButton(
                   icon: const Icon(Icons.logout),
                   onPressed: _logout,
@@ -80,9 +70,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 ),
               ],
             ),
-      body: Center(
-        child: _widgetOptions.elementAt(_selectedIndex),
+      
+      // REVISI: Ganti body ke IndexedStack
+      // Ini penting agar state tiap tab (posisi scroll, data API)
+      // tidak hilang saat ganti tab
+      body: IndexedStack(
+        index: _selectedIndex,
+        children: _widgetOptions,
       ),
+
+      // BottomNavigationBar (tetap sama)
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
           color: Colors.white,
@@ -104,8 +101,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
             topRight: Radius.circular(25),
           ),
           child: BottomNavigationBar(
-            // --- REVISI 3: Hapus item 'Jadwal' ---
-            // Daftar tombol di navbar (sekarang jadi 3)
             items: const <BottomNavigationBarItem>[
               BottomNavigationBarItem(
                 icon: Icon(Icons.home_outlined),
@@ -130,11 +125,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
             backgroundColor: Colors.white,
             showSelectedLabels: true, // Tampilkan label
             showUnselectedLabels: false, // Sembunyikan label non-aktif
-            elevation: 0, // Hapus bayangan default (kita pakai custom)
+            elevation: 0, 
           ),
         ),
       ),
     );
   }
 }
-
