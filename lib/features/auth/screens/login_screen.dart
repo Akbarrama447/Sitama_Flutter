@@ -58,7 +58,8 @@ class _LoginScreenState extends State<LoginScreen> {
         }
       } else {
         // --- GAGAL LOGIN ---
-        final message = responseBody['message'] ?? 'Login gagal. Cek email/password.';
+        final message =
+            responseBody['message'] ?? 'Login gagal. Cek email/password.';
         _showErrorDialog(message);
       }
     } catch (e) {
@@ -246,7 +247,8 @@ class _LoginScreenState extends State<LoginScreen> {
                             child: ElevatedButton(
                               onPressed: _login,
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: Color.fromARGB(255, 116, 165, 250),
+                                backgroundColor:
+                                    Color.fromARGB(255, 116, 165, 250),
                                 foregroundColor: Colors.white,
                                 elevation: 0,
                                 shape: RoundedRectangleBorder(
@@ -297,11 +299,11 @@ class _LoginScreenState extends State<LoginScreen> {
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide(color: Theme.of(context).colorScheme.primary, width: 2),
+        borderSide:
+            BorderSide(color: Theme.of(context).colorScheme.primary, width: 2),
       ),
       labelStyle: TextStyle(color: Colors.grey[600]),
       hintStyle: TextStyle(color: Colors.grey[400]),
     );
   }
 }
-
