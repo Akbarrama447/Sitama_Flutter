@@ -54,10 +54,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
       appBar: _selectedIndex == 2
           ? null // Jangan tampilkan AppBar di Halaman Profil
           : AppBar(
-              title: const Text('SISTEM TA'),
-              backgroundColor: const Color(0xFF1565C0),
+              title: const Text('Sitama - Sistem Tugas Akhir Mahasiswa'),
+              backgroundColor: const Color.fromARGB(255, 255, 255, 255),
               titleTextStyle: const TextStyle(
-                color: Colors.white,
+                color: Color.fromARGB(131, 14, 14, 14),
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
               ),
