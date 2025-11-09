@@ -23,7 +23,7 @@ class _HomeTabState extends State<HomeTab> {
   DateTime? _selectedDay;
   FilterType _activeFilter = FilterType.none;
   late Future<List<dynamic>> _jadwalFuture;
-  final String _baseUrl = 'http://172.16.160.115:8000';
+  final String _baseUrl = 'http://192.168.55.28:8000';
   String _userName = 'User';
 
   @override
@@ -34,6 +34,55 @@ class _HomeTabState extends State<HomeTab> {
     _focusedDay = now;
     _jadwalFuture = _fetchJadwal(_selectedDay!);
     _loadUserData();
+  }
+
+  void _showTugasAkhirMenu(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return Dialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: IntrinsicWidth(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                ListTile(
+                  leading: const Icon(Icons.description_outlined, color: Color.fromARGB(255, 116, 165, 250)),
+                  title: const Text(
+                    'Daftar Tugas Akhir',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w400,
+                    ),
+                  ),
+                  onTap: () {
+                    Navigator.pop(context);
+                    // TODO: Navigasi ke halaman Daftar Tugas Akhir
+                  },
+                ),
+                const Divider(height: 1),
+                ListTile(
+                  leading: const Icon(Icons.school_outlined, color: Color.fromARGB(255, 116, 165, 250)),
+                  title: const Text(
+                    'Daftar Sidang',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w400,
+                    ),
+                  ),
+                  onTap: () {
+                    Navigator.pop(context);
+                    // TODO: Navigasi ke halaman Daftar Sidang
+                  },
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
   }
 
   Future<void> _loadUserData() async {
@@ -196,6 +245,12 @@ class _HomeTabState extends State<HomeTab> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      floatingActionButton: FloatingActionButton(
+        onPressed: () => _showTugasAkhirMenu(context),
+        backgroundColor: const Color.fromARGB(255, 116, 165, 250),
+        elevation: 4,
+        child: const Icon(Icons.school_outlined, color: Colors.white),
+      ),
       body: FutureBuilder<List<dynamic>>(
         future: _jadwalFuture,
         builder: (context, snapshot) {
@@ -275,9 +330,9 @@ class _HomeTabState extends State<HomeTab> {
                 );
 
           return SingleChildScrollView(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
                 // Header with gradient and welcome text
                 Container(
                   height: 160,
@@ -379,12 +434,6 @@ class _HomeTabState extends State<HomeTab> {
           );
         },
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {},
-        backgroundColor: blueMain,
-        child: const Icon(Icons.school, color: Colors.white),
-      ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
     );
   }
 }

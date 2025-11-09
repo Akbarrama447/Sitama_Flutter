@@ -1,4 +1,6 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 import '../../../main.dart'; // Untuk akses storageService
 import '../../auth/screens/login_screen.dart'; // Untuk halaman login
 
@@ -16,6 +18,36 @@ class DashboardScreen extends StatefulWidget {
 
 class _DashboardScreenState extends State<DashboardScreen> {
   int _selectedIndex = 0; // Halaman yang sedang aktif
+  String _userName = 'User';
+  final String _baseUrl = 'http://192.168.55.28:8000';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserName();
+  }
+
+  Future<void> _loadUserName() async {
+    try {
+      final token = await storageService.getToken();
+      if (token == null) return _logout();
+
+      final url = Uri.parse('$_baseUrl/api/user');
+      final response = await http.get(url, headers: {
+        'Authorization': 'Bearer $token',
+        'Accept': 'application/json',
+      });
+
+      if (response.statusCode == 200) {
+        final userData = jsonDecode(response.body);
+        setState(() {
+          _userName = userData['nama'] ?? 'User';
+        });
+      }
+    } catch (e) {
+      debugPrint('Error loading user data: $e');
+    }
+  }
 
   // --- REVISI: GANTI PLACEHOLDER DENGAN WIDGET ASLI ---
   static final List<Widget> _widgetOptions = <Widget>[
@@ -28,6 +60,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
     // Index 2: Profil
     ProfileTab(),
   ];
+
+
 
   // Fungsi untuk pindah tab
   void _onItemTapped(int index) {
@@ -61,8 +95,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
               ),
-              iconTheme: const IconThemeData(color: Colors.white),
+              iconTheme: const IconThemeData(color: Color.fromARGB(255, 116, 165, 250)),
               actions: [
+                // Tombol Logout
                 IconButton(
                   icon: const Icon(Icons.logout),
                   onPressed: _logout,
@@ -108,8 +143,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 label: 'Home',
               ),
               BottomNavigationBarItem(
-                icon: Icon(Icons.school_outlined), // Ikon TA
-                activeIcon: Icon(Icons.school),
+                icon: const Icon(Icons.school_outlined),
+                activeIcon: const Icon(Icons.school),
                 label: 'TA',
               ),
               BottomNavigationBarItem(
