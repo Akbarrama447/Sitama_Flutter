@@ -4,6 +4,7 @@ import 'dart:convert';
 import '../../../main.dart'; // Untuk akses storageService
 import '../../../core/services/api_service.dart';
 import '../../dashboard/screens/dashboard_screen.dart';
+import 'ganti_password_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -232,7 +233,11 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                         TextButton(
                           onPressed: () {
-                            // TODO: Bikin halaman Lupa Password
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (_) => const GantiPasswordScreen(),
+                              ),
+                            );
                           },
                           child: const Text('Lupa password?'),
                         ),

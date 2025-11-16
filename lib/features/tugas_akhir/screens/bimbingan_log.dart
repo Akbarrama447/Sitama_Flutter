@@ -5,6 +5,7 @@ import 'package:intl/intl.dart'; // Untuk format tanggal
 
 import '../../../main.dart'; // Untuk storageService
 import '../../auth/screens/login_screen.dart';
+import 'add_log_screen.dart';
 
 class TugasAkhirTab extends StatefulWidget {
   const TugasAkhirTab({super.key});
@@ -16,10 +17,13 @@ class TugasAkhirTab extends StatefulWidget {
 class _TugasAkhirTabState extends State<TugasAkhirTab> {
   late Future<List<dynamic>> _logsFuture;
   // Sesuaikan IP backend lo
-  final String _baseUrl = 'http://172.16.161.136:8000'; 
-  
+  final String _baseUrl = 'http://192.168.55.21:8000';
+
   // Target bimbingan (misal minimal 8 kali)
   final int _targetBimbingan = 8;
+
+  // Filter state
+  String _selectedFilter = 'Semua Bimbingan';
 
   @override
   void initState() {
@@ -86,10 +90,17 @@ class _TugasAkhirTabState extends State<TugasAkhirTab> {
             return Center(child: Text('Error: ${snapshot.error}', style: const TextStyle(color: Colors.red)));
           }
 
-          final logs = snapshot.data ?? [];
+          final allLogs = snapshot.data ?? [];
+          // Filter logs based on selected filter
+          final logs = _selectedFilter == 'Semua Bimbingan'
+              ? allLogs
+              : _selectedFilter == 'Disetujui'
+                  ? allLogs.where((log) => log['status'] == 1).toList()
+                  : allLogs.where((log) => log['status'] == 0).toList(); // Menunggu
+
           // Hitung jumlah bimbingan yang sudah disetujui (status == 1)
           // Atau hitung semua log, tergantung kebijakan kampus lo.
-          final progressCount = logs.length; 
+          final progressCount = allLogs.length;
           final progressValue = (progressCount / _targetBimbingan).clamp(0.0, 1.0);
 
           return SingleChildScrollView(
@@ -99,9 +110,9 @@ class _TugasAkhirTabState extends State<TugasAkhirTab> {
               children: [
                 // 1. HEADER STATUS
                 _buildStatusCard(progressCount, progressValue),
-                
+
                 const SizedBox(height: 24),
-                
+
                 // 2. JUDUL & KONTROL (Filter + Tambah)
                 const Text(
                   'Pembimbingan',
@@ -109,7 +120,7 @@ class _TugasAkhirTabState extends State<TugasAkhirTab> {
                 ),
                 const SizedBox(height: 12),
                 _buildControls(),
-                
+
                 const SizedBox(height: 16),
 
                 // 3. LIST LOG
@@ -124,7 +135,7 @@ class _TugasAkhirTabState extends State<TugasAkhirTab> {
                       return _buildLogItem(logs[index]);
                     },
                   ),
-                  
+
                 const SizedBox(height: 80), // Space bawah
               ],
             ),
@@ -156,10 +167,10 @@ class _TugasAkhirTabState extends State<TugasAkhirTab> {
                 InkWell(
                   onTap: () => debugPrint('Cetak diklik'),
                   child: Row(
-                    children: const [
-                      Icon(Icons.print_outlined, size: 16, color: Colors.grey),
-                      SizedBox(width: 4),
-                      Text('Cetak lembar persetujuan', style: TextStyle(fontSize: 12, color: Colors.grey)),
+                    children: [
+                      const Icon(Icons.print_outlined, size: 16, color: Colors.grey),
+                      const SizedBox(width: 4),
+                      const Text('Cetak lembar persetujuan', style: TextStyle(fontSize: 12, color: Colors.grey)),
                     ],
                   ),
                 )
@@ -213,9 +224,9 @@ class _TugasAkhirTabState extends State<TugasAkhirTab> {
                   ),
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
-                    children: const [
-                      Icon(Icons.assignment_outlined, color: Colors.white),
-                      Text('Kontrol', style: TextStyle(color: Colors.white, fontSize: 9)),
+                    children: [
+                      const Icon(Icons.assignment_outlined, color: Colors.white),
+                      const Text('Kontrol', style: TextStyle(color: Colors.white, fontSize: 9)),
                     ],
                   ),
                 ),
@@ -241,7 +252,7 @@ class _TugasAkhirTabState extends State<TugasAkhirTab> {
             ),
             child: DropdownButtonHideUnderline(
               child: DropdownButton<String>(
-                value: 'Semua Bimbingan',
+                value: _selectedFilter,
                 isExpanded: true,
                 items: ['Semua Bimbingan', 'Disetujui', 'Menunggu'].map((String value) {
                   return DropdownMenuItem<String>(
@@ -250,7 +261,11 @@ class _TugasAkhirTabState extends State<TugasAkhirTab> {
                   );
                 }).toList(),
                 onChanged: (val) {
-                  // TODO: Implement filter logic
+                  if (val != null) {
+                    setState(() {
+                      _selectedFilter = val;
+                    });
+                  }
                 },
               ),
             ),
@@ -259,9 +274,17 @@ class _TugasAkhirTabState extends State<TugasAkhirTab> {
         const SizedBox(width: 12),
         // Tombol Tambah
         ElevatedButton(
-          onPressed: () {
-            // TODO: Navigasi ke Form Tambah Log
-             debugPrint('Tambah Bimbingan diklik');
+          onPressed: () async {
+            final result = await Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const AddLogScreen()),
+            );
+            if (result == true) {
+              // Refresh the list
+              setState(() {
+                _logsFuture = _fetchLogs();
+              });
+            }
           },
           style: ElevatedButton.styleFrom(
             backgroundColor: const Color(0xFF03A9F4), // Warna biru sesuai gambar
@@ -277,14 +300,14 @@ class _TugasAkhirTabState extends State<TugasAkhirTab> {
 
   Widget _buildLogItem(dynamic logData) {
     final log = logData as Map<String, dynamic>;
-    
+
     // Parse tanggal dari String "YYYY-MM-DD" ke DateTime
     final date = DateTime.parse(log['tanggal']);
-    // Format ke "Senin, 1 Maret 2025" (Memerlukan locale 'id_ID')
-    final formattedDate = DateFormat('EEEE, d MMMM yyyy', 'id_ID').format(date);
+    // Format ke "Senin, 1 Maret 2025" (tanpa locale untuk menghindari error)
+    final formattedDate = DateFormat('EEEE, d MMMM yyyy').format(date);
   // Pisahkan tanggal untuk tampilan 2 baris (opsional, sesuai selera desain)
   // (tidak digunakan sekarang — hapus jika tidak diperlukan)
-    
+
     final status = log['status']; // 0, 1, atau 2
 
     // Tentukan icon berdasarkan status
@@ -317,7 +340,7 @@ class _TugasAkhirTabState extends State<TugasAkhirTab> {
             width: 90,
             child: Text(
               // Ganti spasi dengan newline biar jadi 2 baris kayak di gambar
-              formattedDate.replaceFirst(', ', '\n'), 
+              formattedDate.replaceFirst(', ', '\n'),
               style: TextStyle(
                 fontSize: 13,
                 height: 1.4,
@@ -328,8 +351,8 @@ class _TugasAkhirTabState extends State<TugasAkhirTab> {
           ),
           // Garis Pemisah Vertikal
           Container(
-            height: 40, 
-            width: 1, 
+            height: 40,
+            width: 1,
             color: Colors.grey.shade300,
             margin: const EdgeInsets.symmetric(horizontal: 12),
           ),
@@ -371,10 +394,10 @@ class _TugasAkhirTabState extends State<TugasAkhirTab> {
       child: Padding(
         padding: const EdgeInsets.all(32.0),
         child: Column(
-          children: const [
-            Icon(Icons.history_edu_outlined, size: 80, color: Colors.grey),
-            SizedBox(height: 16),
-            Text('Belum ada riwayat bimbingan.', style: TextStyle(color: Colors.grey)),
+          children: [
+            const Icon(Icons.history_edu_outlined, size: 80, color: Colors.grey),
+            const SizedBox(height: 16),
+            const Text('Belum ada riwayat bimbingan.', style: TextStyle(color: Colors.grey)),
           ],
         ),
       ),

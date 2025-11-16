@@ -7,7 +7,7 @@ import '../../auth/screens/login_screen.dart'; // Untuk halaman login
 // --- IMPORT TAB KITA ---
 import '../../profile/screens/profile_tab.dart';
 import '../../home/screens/home_tab.dart'; // <-- BARU
-import '../../tugas_akhir/screens/tugas_akhir_tab.dart'; // <-- BARU
+import '../../tugas_akhir/screens/bimbingan_log.dart'; // <-- BARU
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -19,7 +19,7 @@ class DashboardScreen extends StatefulWidget {
 class _DashboardScreenState extends State<DashboardScreen> {
   int _selectedIndex = 0; // Halaman yang sedang aktif
   String _userName = 'User';
-  final String _baseUrl = 'http://172.16.161.136:8000';
+  final String _baseUrl = 'http://192.168.55.21:8000';
 
   @override
   void initState() {
