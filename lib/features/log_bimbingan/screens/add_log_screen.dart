@@ -20,7 +20,7 @@ class _AddLogScreenState extends State<AddLogScreen> {
   DateTime? _selectedDate;
   bool _isLoading = false;
 
-  final String _baseUrl = 'http://192.168.55.21:8000';
+  final String _baseUrl = 'http://192.168.0.116:8000';
 
   Future<void> _selectDate(BuildContext context) async {
     final DateTime? picked = await showDatePicker(

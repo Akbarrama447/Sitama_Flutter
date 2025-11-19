@@ -6,6 +6,7 @@ import 'package:table_calendar/table_calendar.dart';
 import '../../../main.dart';
 import '../../../widgets/schedule_detail_dialog.dart';
 import '../../auth/screens/login_screen.dart';
+import '../../tugas_akhir/screens/daftar_tugas_akhir_screen.dart';
 
 enum FilterType { none, room, time }
 
@@ -23,7 +24,7 @@ class _HomeTabState extends State<HomeTab> {
   DateTime? _selectedDay;
   FilterType _activeFilter = FilterType.none;
   late Future<List<dynamic>> _jadwalFuture;
-  final String _baseUrl = 'http://192.168.55.21:8000';
+  final String _baseUrl = 'http://192.168.0.116:8000';
   String _userName = 'User';
 
   @override
@@ -59,7 +60,10 @@ class _HomeTabState extends State<HomeTab> {
                   ),
                   onTap: () {
                     Navigator.pop(context);
-                    // TODO: Navigasi ke halaman Daftar Tugas Akhir
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => const DaftarTugasAkhirScreen()),
+                    );
                   },
                 ),
                 const Divider(height: 1),
@@ -359,10 +363,10 @@ class _HomeTabState extends State<HomeTab> {
                       child: Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 18.0),
                         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                          Row(mainAxisSize: MainAxisSize.min, children: [
-                            InkWell(onTap: () => _selectMonth(context), child: Container(padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8), decoration: BoxDecoration(color: blueMain, borderRadius: BorderRadius.circular(24), boxShadow: const [BoxShadow(color: Color.fromRGBO(30, 136, 229, 0.15), blurRadius: 6, offset: Offset(0, 2))]), child: Row(children: [Text(_selectedMonthLabel(_focusedDay), style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)), const SizedBox(width: 6), const Icon(Icons.keyboard_arrow_down, color: Colors.white, size: 20)]))),
+                          Row(children: [
+                            Expanded(child: InkWell(onTap: () => _selectMonth(context), child: Container(padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8), decoration: BoxDecoration(color: blueMain, borderRadius: BorderRadius.circular(24), boxShadow: const [BoxShadow(color: Color.fromRGBO(30, 136, 229, 0.15), blurRadius: 6, offset: Offset(0, 2))]), child: Row(mainAxisSize: MainAxisSize.min, children: [Text(_selectedMonthLabel(_focusedDay), style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)), const SizedBox(width: 6), const Icon(Icons.keyboard_arrow_down, color: Colors.white, size: 20)])))),
                             const SizedBox(width: 10),
-                            InkWell(onTap: () => _selectYear(context), child: Container(padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8), decoration: BoxDecoration(color: blueMain, borderRadius: BorderRadius.circular(24), boxShadow: const [BoxShadow(color: Color.fromRGBO(30, 136, 229, 0.15), blurRadius: 6, offset: Offset(0, 2))]), child: Row(children: [Text(_focusedDay.year.toString(), style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)), const SizedBox(width: 6), const Icon(Icons.keyboard_arrow_down, color: Colors.white, size: 20)]))),
+                            Expanded(child: InkWell(onTap: () => _selectYear(context), child: Container(padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8), decoration: BoxDecoration(color: blueMain, borderRadius: BorderRadius.circular(24), boxShadow: const [BoxShadow(color: Color.fromRGBO(30, 136, 229, 0.15), blurRadius: 6, offset: Offset(0, 2))]), child: Row(mainAxisSize: MainAxisSize.min, children: [Text(_focusedDay.year.toString(), style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)), const SizedBox(width: 6), const Icon(Icons.keyboard_arrow_down, color: Colors.white, size: 20)])))),
                           ]),
                           const SizedBox(height: 12),
                           TableCalendar(
