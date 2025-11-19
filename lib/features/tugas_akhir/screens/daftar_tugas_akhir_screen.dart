@@ -19,7 +19,7 @@ class _DaftarTugasAkhirScreenState extends State<DaftarTugasAkhirScreen> {
   final _anggotaController = TextEditingController();
   bool _isLoading = false;
 
-  final String _baseUrl = 'http://192.168.0.116:8000';
+  final String _baseUrl = 'http://192.168.1.9:8000';
 
   Future<void> _submitTugasAkhir() async {
     if (!_formKey.currentState!.validate()) return;
