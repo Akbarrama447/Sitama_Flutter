@@ -19,7 +19,7 @@ class _DaftarTugasAkhirScreenState extends State<DaftarTugasAkhirScreen> {
   final _anggotaController = TextEditingController();
   bool _isLoading = false;
 
-  final String _baseUrl = 'http://192.168.1.9:8000';
+  final String _baseUrl = 'http://192.168.1.14:8000';
 
   Future<void> _submitTugasAkhir() async {
     if (!_formKey.currentState!.validate()) return;
@@ -91,8 +91,12 @@ class _DaftarTugasAkhirScreenState extends State<DaftarTugasAkhirScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Daftar Tugas Akhir'),
+        title: const Text('Daftar Tugas Akhir',
+        style: TextStyle(
+            color: Colors.white,
+          ),),
         backgroundColor: const Color(0xFF03A9F4),
+
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),

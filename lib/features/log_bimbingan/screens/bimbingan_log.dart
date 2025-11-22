@@ -17,7 +17,7 @@ class TugasAkhirTab extends StatefulWidget {
 class _TugasAkhirTabState extends State<TugasAkhirTab> {
   late Future<List<dynamic>> _logsFuture;
   // Sesuaikan IP backend lo
-  final String _baseUrl = 'http://192.168.1.9:8000';
+  final String _baseUrl = 'http://192.168.1.14:8000';
 
   // Target bimbingan (misal minimal 8 kali)
   final int _targetBimbingan = 8;
@@ -362,12 +362,18 @@ class _TugasAkhirTabState extends State<TugasAkhirTab> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  log['dosen'] ?? 'Dosen',
-                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Color(0xFF2C3E50)),
+                  log['pembimbing'] ?? 'Pembimbing',
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 15,
+                    color: Color(0xFF2C3E50),
+                  ),
                 ),
+
                 const SizedBox(height: 4),
+
                 Text(
-                  log['catatan'] ?? '-',
+                  log['deskripsi'] ?? '-',
                   style: TextStyle(fontSize: 13, color: Colors.grey[600]),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,

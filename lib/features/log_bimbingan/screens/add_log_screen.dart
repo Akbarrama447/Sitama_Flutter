@@ -5,7 +5,6 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
 import 'package:file_picker/file_picker.dart';
-
 import '../../../main.dart';
 import '../../auth/screens/login_screen.dart';
 
@@ -28,7 +27,7 @@ class _AddLogScreenState extends State<AddLogScreen> {
 
   bool _isLoading = false;
 
-  final String _baseUrl = 'http://192.168.1.9:8000';
+  final String _baseUrl = 'http://192.168.1.14:8000';
 
   Future<void> _selectDate(BuildContext context) async {
     final DateTime? picked = await showDatePicker(
@@ -42,18 +41,22 @@ class _AddLogScreenState extends State<AddLogScreen> {
     }
   }
 
+  PlatformFile? _pickedPlatformFile;
+
   Future<void> _pickFile() async {
-    final result = await FilePicker.platform.pickFiles();
+    final result = await FilePicker.platform.pickFiles(withData: true);
     if (result != null) {
       setState(() {
-        _selectedFile = File(result.files.single.path!);
+        _pickedPlatformFile = result.files.first;
       });
+      print("Picked: ${_pickedPlatformFile!.name}");
     }
   }
 
-  // ============================================================
-  // FINAL — PERBAIKAN SUBMIT (MULTIPART + SESUAI LARAVEL)
-  // ============================================================
+
+  // ================================
+  //   FIXED SUBMIT (VALE VALID)
+  // ================================
   Future<void> _submitLog() async {
     if (!_formKey.currentState!.validate()) return;
 
@@ -64,7 +67,7 @@ class _AddLogScreenState extends State<AddLogScreen> {
       return;
     }
 
-    if (_selectedFile == null) {
+        if (_pickedPlatformFile == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('File wajib diupload')),
       );
@@ -91,9 +94,13 @@ class _AddLogScreenState extends State<AddLogScreen> {
       request.fields['tanggal'] =
           DateFormat('yyyy-MM-dd').format(_selectedDate!);
 
-      // file multipart
+      // FILE UPLOAD (WEB + ANDROID)
       request.files.add(
-        await http.MultipartFile.fromPath('file', _selectedFile!.path),
+        http.MultipartFile.fromBytes(
+          'file_path',
+          _pickedPlatformFile!.bytes!,
+          filename: _pickedPlatformFile!.name,
+        ),
       );
 
       request.headers['Authorization'] = 'Bearer $token';
