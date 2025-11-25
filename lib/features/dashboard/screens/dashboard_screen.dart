@@ -18,8 +18,8 @@ class DashboardScreen extends StatefulWidget {
 
 class _DashboardScreenState extends State<DashboardScreen> {
   int _selectedIndex = 0; // Halaman yang sedang aktif
-  String _userName = 'User';
-  final String _baseUrl = 'http://192.168.0.116:8000';
+  String _userName = 'Mahasiswa';
+  final String _baseUrl = 'http://172.16.163.244:8000';
 
   @override
   void initState() {
