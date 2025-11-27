@@ -20,7 +20,7 @@ class _DaftarTugasAkhirScreenState extends State<DaftarTugasAkhirScreen> {
   final _anggotaController = TextEditingController();
   bool _isLoading = false;
 
-  final String _baseUrl = 'http://172.16.163.244:8000';
+  final String _baseUrl = 'http://172.16.160.154:8000';
 
   // Warna utama yang digunakan
   static const Color _primaryColor = Color(0xFF03A9F4);

@@ -7,6 +7,7 @@ import '../../../main.dart';
 import '../../../widgets/schedule_detail_dialog.dart';
 import '../../auth/screens/login_screen.dart';
 import '../../tugas_akhir/screens/daftar_tugas_akhir_screen.dart';
+import '../../pendaftartan_sidang/screens/pendaftaransidang.dart';
 
 enum FilterType { none, room, time }
 
@@ -24,7 +25,7 @@ class _HomeTabState extends State<HomeTab> {
   DateTime? _selectedDay;
   FilterType _activeFilter = FilterType.none;
   late Future<List<dynamic>> _jadwalFuture;
-  final String _baseUrl = 'http://172.16.163.244:8000';
+  final String _baseUrl = 'http://172.16.160.154:8000';
   String _userName = 'User';
 
   @override
@@ -78,7 +79,10 @@ class _HomeTabState extends State<HomeTab> {
                   ),
                   onTap: () {
                     Navigator.pop(context);
-                    // TODO: Navigasi ke halaman Daftar Sidang
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => const PendaftaranSidangPage()),
+                    );
                   },
                 ),
               ],
