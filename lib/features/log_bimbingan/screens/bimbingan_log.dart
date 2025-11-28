@@ -17,7 +17,7 @@ class TugasAkhirTab extends StatefulWidget {
 class _TugasAkhirTabState extends State<TugasAkhirTab> {
   late Future<List<dynamic>> _logsFuture;
   // Sesuaikan IP backend lo
-  final String _baseUrl = 'http://192.168.55.21:8000';
+  final String _baseUrl = 'http://172.16.160.154:8000';
 
   // Target bimbingan (misal minimal 8 kali)
   final int _targetBimbingan = 8;
