@@ -1,10 +1,6 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
-
-// Asumsi ini sudah ada di file terpisah
-import '../../../main.dart'; 
-import '../../auth/screens/login_screen.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import '../../../core/services/api_service.dart';
 
 class DaftarTugasAkhirScreen extends StatefulWidget {
   const DaftarTugasAkhirScreen({super.key});
@@ -14,303 +10,486 @@ class DaftarTugasAkhirScreen extends StatefulWidget {
 }
 
 class _DaftarTugasAkhirScreenState extends State<DaftarTugasAkhirScreen> {
-  final _formKey = GlobalKey<FormState>();
-  final _judulController = TextEditingController();
-  final _deskripsiController = TextEditingController(); // Tetap dipertahankan
-  final _anggotaController = TextEditingController();
+  final TextEditingController _titleController = TextEditingController();
+  final TextEditingController _descController = TextEditingController();
   bool _isLoading = false;
+  
+  // Daftar mahasiswa
+  final List<Map<String, String>> _daftarMahasiswa = [
+    {'nim': '110124421', 'nama': 'Rivan Dwi Cahyanto'},
+    {'nim': '110124422', 'nama': 'Suko Tyas'},
+    {'nim': '110124423', 'nama': 'Bagas'},
+    {'nim': '110124424', 'nama': 'Dimas'},
+    {'nim': '110124425', 'nama': 'Nanda'},
+    {'nim': '110124426', 'nama': 'Cahya'},
+    {'nim': '110124427', 'nama': 'Rafi'},
+    {'nim': '110124428', 'nama': 'Tiara'},
+    {'nim': '110124429', 'nama': 'Aulia'},
+  ];
 
-  final String _baseUrl = 'http://172.16.160.154:8000';
+  // Daftar controller untuk setiap field anggota
+  List<TextEditingController> _anggotaControllers = [TextEditingController()];
+  
+  // Fungsi untuk menambah field anggota
+  void _tambahAnggotaField() {
+    setState(() {
+      _anggotaControllers.add(TextEditingController());
+    });
+  }
+  
+  // Fungsi untuk menghapus field anggota
+  void _hapusAnggotaField(int index) {
+    if (index > 0 && _anggotaControllers.length > 1) {
+      setState(() {
+        _anggotaControllers.removeAt(index).dispose();
+      });
+    }
+  }
 
-  // Warna utama yang digunakan
-  static const Color _primaryColor = Color(0xFF03A9F4);
-  static const Color _backgroundColor = Color(0xFFF0F4F8); // Background di luar card
-  // Warna untuk gradient biru tipis di atas
-  static const Color _lightBlueGradientStart = Color(0xFFE3F2FD); // Sangat muda
-  static const Color _lightBlueGradientEnd = Color(0xFFF0F8FF);   // Hampir putih
-
-  // Logika _submitTugasAkhir (TIDAK BERUBAH dari kode asli Anda)
   Future<void> _submitTugasAkhir() async {
-    if (!_formKey.currentState!.validate()) return;
+    String title = _titleController.text.trim();
+    String desc = _descController.text.trim();
 
-    setState(() => _isLoading = true);
+    // Kumpulkan semua NIM dari field-field anggota
+    List<String> memberNims = [];
+    
+    print('Jumlah field anggota: ${_anggotaControllers.length}'); // Debug log
+    
+    for (int i = 0; i < _anggotaControllers.length; i++) {
+      String inputText = _anggotaControllers[i].text.trim();
+      print('Field[$i]: "$inputText"'); // Debug log
+      
+      if (inputText.isNotEmpty) {
+        // Cek apakah input cocok dengan nama di daftar
+        String? foundNim;
+        for (var mhs in _daftarMahasiswa) {
+          if (mhs['nama'] == inputText) {
+            foundNim = mhs['nim'];
+            break;
+          }
+        }
+        
+        if (foundNim != null) {
+          memberNims.add(foundNim);
+          print('Menambahkan NIM: $foundNim'); // Debug log
+        } else {
+          // Cek apakah input adalah format NIM
+          bool isNimFormat = RegExp(r'^\d{6,9}$').hasMatch(inputText);
+          if (isNimFormat) {
+            memberNims.add(inputText);
+            print('Menambahkan NIM langsung: $inputText'); // Debug log
+          } else {
+            // Tampilkan error jika nama tidak ditemukan
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('Anggota "$inputText" tidak ditemukan dalam daftar mahasiswa.'),
+                  backgroundColor: Colors.red,
+                ),
+              );
+            }
+            return;
+          }
+        }
+      }
+    }
+
+    print('Member NIMs sebelum dikirim ke API: $memberNims'); // Debug log
+
+    if (title.isEmpty || desc.isEmpty) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text("Harap isi judul dan deskripsi terlebih dahulu!"),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+      return;
+    }
+    
+    // Tampilkan loading
+    setState(() {
+      _isLoading = true;
+    });
 
     try {
-      final token = await storageService.getToken();
+      print('Title: $title'); // Debug log
+      print('Description: $desc'); // Debug log
+      print('Member NIMs: $memberNims'); // Debug log
+      print('Total members: ${memberNims.length}'); // Debug log
+
+      // Ambil token dari shared preferences
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      String? token = prefs.getString('token');
+
       if (token == null) {
-        _forceLogout();
+        // Coba beberapa kemungkinan key token
+        token = prefs.getString('access_token') ?? 
+                prefs.getString('bearer_token') ?? 
+                prefs.getString('auth_token');
+      }
+
+      if (token == null) {
+        if (mounted) {
+          setState(() {
+            _isLoading = false;
+          });
+          
+          // Tampilkan pesan bahwa user perlu login
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text("Anda belum login. Silakan login terlebih dahulu."),
+              backgroundColor: Colors.orange,
+            ),
+          );
+        }
         return;
       }
 
-      // Parse anggota kelompok - extract names as array of strings
-      final anggotaList = _anggotaController.text.trim().split(',');
-      final anggota = anggotaList.map((e) => e.trim()).where((e) => e.isNotEmpty).toList();
-
-      final url = '$_baseUrl/api/tugas-akhir';
-      final body = jsonEncode({
-        'judul': _judulController.text.trim(),
-        'deskripsi': _deskripsiController.text.trim(),
-        'anggota': anggota,
-      });
-
-      final response = await http.post(
-        Uri.parse(url),
-        headers: {
-          'Authorization': 'Bearer $token',
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-        },
-        body: body,
+      // Panggil API untuk membuat tugas akhir
+      await ApiService.createThesis(
+        token: token,
+        title: title,
+        description: desc,
+        members: memberNims, // kirim array of NIM
       );
 
-      if (response.statusCode == 201 || response.statusCode == 200) {
+      // Reset form
+      _titleController.clear();
+      _descController.clear();
+      for (var controller in _anggotaControllers) {
+        controller.clear();
+      }
+
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+
+        // Tampilkan pesan sukses
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Tugas akhir berhasil didaftarkan')),
+          const SnackBar(
+            content: Text("Tugas akhir berhasil diajukan!"),
+            backgroundColor: Colors.green,
+          ),
         );
-        Navigator.of(context).pop(true);
-      } else if (response.statusCode == 401) {
-        _forceLogout();
-      } else {
-        throw Exception('Gagal mendaftarkan tugas akhir: ${response.statusCode} - ${response.body}');
+
+        // Kembali ke halaman sebelumnya
+        Navigator.pop(context);
       }
     } catch (e) {
-      debugPrint('Error submitting tugas akhir: $e');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: $e')),
-      );
-    } finally {
-      setState(() => _isLoading = false);
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+
+        // Tampilkan pesan error
+        String errorMessage = 'Gagal mengajukan tugas akhir: ';
+        if (e is String) {
+          errorMessage += e;
+        } else if (e.toString().contains('SocketException')) {
+          errorMessage = 'Tidak dapat terhubung ke server. Periksa koneksi internet.';
+        } else if (e.toString().contains('401')) {
+          errorMessage = 'Token tidak valid. Silakan login kembali.';
+        } else if (e.toString().contains('403')) {
+          errorMessage = 'Akses ditolak. Silakan coba lagi.';
+        } else if (e.toString().contains('422')) {
+          errorMessage = 'Data tidak valid. Periksa kembali inputan Anda.';
+        } else {
+          errorMessage += e.toString();
+        }
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(errorMessage),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
   }
 
-  void _forceLogout() {
-    storageService.deleteToken();
-    if (mounted) {
-      Navigator.of(context, rootNavigator: true).pushAndRemoveUntil(
-        MaterialPageRoute(builder: (context) => const LoginScreen()),
-        (route) => false,
-      );
+  @override
+  void dispose() {
+    _titleController.dispose();
+    _descController.dispose();
+    for (var controller in _anggotaControllers) {
+      controller.dispose();
     }
+    super.dispose();
   }
 
-  // ------------------------------------------------------------------
-  // WIDGET KUSTOM UNTUK MENYESUAIKAN TAMPILAN (UI/UX)
-  // ------------------------------------------------------------------
-
-  // Widget untuk meniru input field minimalis dari screenshot
-  Widget _buildMinimalistTextField({
-    required TextEditingController controller,
-    required String hintText,
-    required String labelText,
-    bool isRequired = false,
-    int maxLines = 1,
-    String? validatorMessage,
-    Widget? suffixIcon,
-  }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // Label Judul Tugas Akhir * / Anggota Kelompok
-        Padding(
-          padding: const EdgeInsets.only(bottom: 8.0),
-          child: Text(
-            labelText,
-            style: const TextStyle(
-              color: Colors.black,
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-        ),
-        // Text Field
-        TextFormField(
-          controller: controller,
-          maxLines: maxLines,
-          decoration: InputDecoration(
-            hintText: hintText,
-            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-            // Border yang terlihat minimalis, seperti di screenshot
-            border: const OutlineInputBorder(
-              borderSide: BorderSide(color: Colors.grey, width: 0.5),
-            ),
-            enabledBorder: const OutlineInputBorder(
-              borderSide: BorderSide(color: Colors.grey, width: 0.5),
-            ),
-            focusedBorder: const OutlineInputBorder(
-              borderSide: BorderSide(color: _primaryColor, width: 2.0),
-            ),
-            suffixIcon: suffixIcon,
-          ),
-          validator: (value) {
-            if (isRequired && (value == null || value.trim().isEmpty)) {
-              return validatorMessage ?? '$labelText tidak boleh kosong';
-            }
-            return null;
-          },
-        ),
-      ],
-    );
-  }
-
-  // Widget Card Header untuk "Pendaftaran Tugas Akhir"
-  Widget _buildCardHeader() {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 16.0),
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        border: Border(
-          bottom: BorderSide(color: Colors.grey, width: 0.5),
-        ),
-      ),
-      child: const Text(
-        'Pendaftaran Tugas Akhir',
-        style: TextStyle(
-          fontSize: 20,
-          fontWeight: FontWeight.bold,
-          color: Colors.black87,
-        ),
-      ),
-    );
-  }
-
-  // ------------------------------------------------------------------
-  // BUILD METHOD UTAMA
-  // ------------------------------------------------------------------
   @override
   Widget build(BuildContext context) {
-    // Header Suko Tyas
-    final topHeader = Container(
-      padding: const EdgeInsets.fromLTRB(16.0, 40.0, 16.0, 10.0),
-      color: Colors.white,
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.end,
-        children: [
-          Text(
-            '', 
-            style: TextStyle(
-              fontSize: 16, 
-              fontWeight: FontWeight.w600, 
-              color: Colors.grey.shade700
-            ),
-          ),
-        ],
-      ),
-    );
-
     return Scaffold(
-      backgroundColor: _backgroundColor, 
-      body: Column(
+      body: Stack(
         children: [
-          // Bagian atas yang putih dengan nama Suko Tyas
-          topHeader,
-          
-          // Bagian dengan gradient biru tipis
-          Container(
-            height: 100, // Tinggi area gradient, bisa disesuaikan
-            width: double.infinity,
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [_lightBlueGradientStart, _lightBlueGradientEnd],
+          Column(
+            children: [
+              Container(
+                height: 55,
+                color: Colors.white,
+                alignment: Alignment.centerRight,
+                padding: const EdgeInsets.only(right: 16),
+                child: const Text(
+                  'Suko Tyas',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.black87,
+                  ),
+                ),
               ),
-            ),
-            child: Align( // Menempatkan garis biru di bagian paling bawah gradient
-              alignment: Alignment.bottomCenter,
-              child: Container(
-                height: 4.0, 
-                width: double.infinity, 
-                color: _primaryColor,
+              Container(
+                height: 130,
+                width: double.infinity,
+                decoration: const BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.centerLeft,
+                    end: Alignment.centerRight,
+                    colors: [
+                      Colors.white,
+                      Color(0xFFB3D9FF),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+
+          /// PANAH KEMBALI
+          Positioned(
+            top: 40.0,
+            left: 16.0,
+            child: InkWell(
+              onTap: () {
+                Navigator.pop(context);
+              },
+              child: const Icon(
+                Icons.arrow_back,
+                size: 28,
+                color: Colors.black87,
               ),
             ),
           ),
 
-          // Formulir utama (yang merupakan "card" putih)
-          Expanded(
+          Positioned(
+            top: 40.0,
+            right: 16.0,
+            child: const Text(
+              'Suko Tyas',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: Colors.white,
+              ),
+            ),
+          ),
+
+          Center(
             child: SingleChildScrollView(
-              child: Container(
-                margin: const EdgeInsets.all(0), // Tidak ada margin horizontal
-                color: Colors.white, // Simulasi Card/Kontainer Putih
-                child: Form(
-                  key: _formKey,
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 20.0, vertical: 80.0),
+              child: Card(
+                elevation: 4,
+                color: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12.0),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(24.0),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      _buildCardHeader(), // "Pendaftaran Tugas Akhir" header
+                      const Text(
+                        'Pendaftaran Tugas Akhir',
+                        style: TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black87,
+                        ),
+                      ),
 
-                      // Padding untuk konten form
-                      Padding(
-                        padding: const EdgeInsets.all(16.0),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            // 1. Field Judul Tugas Akhir (Wajib)
-                            _buildMinimalistTextField(
-                              controller: _judulController,
-                              hintText: 'Masukan Judul Tugas Akhir',
-                              labelText: 'Judul Tugas Akhir *', // Menambahkan tanda bintang
-                              isRequired: true,
-                              validatorMessage: 'Judul tugas akhir tidak boleh kosong',
-                            ),
-                            
-                            const SizedBox(height: 24), 
-                            
-                            // 2. Field Deskripsi Tugas Akhir (Wajib, multi-line)
-                             _buildMinimalistTextField(
-                              controller: _deskripsiController,
-                              hintText: 'Masukan deskripsi singkat tugas akhir Anda',
-                              labelText: 'Deskripsi Tugas Akhir *', // Menambahkan tanda bintang
-                              isRequired: true,
-                              maxLines: 3,
-                              validatorMessage: 'Deskripsi tugas akhir tidak boleh kosong',
-                            ),
+                      const SizedBox(height: 25),
 
-                            const SizedBox(height: 24),
+                      /// JUDUL
+                      const Text(
+                        'Judul Tugas Akhir *',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500,
+                          color: Colors.black87,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      TextFormField(
+                        controller: _titleController,
+                        decoration: InputDecoration(
+                          hintText: 'Masukkan Judul Tugas Akhir',
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8.0),
+                            borderSide: BorderSide(color: Colors.grey.shade400),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8.0),
+                            borderSide: BorderSide(color: Colors.grey.shade300),
+                          ),
+                          contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 16, vertical: 12),
+                          filled: true,
+                          fillColor: Colors.white,
+                        ),
+                        maxLines: 2,
+                      ),
 
-                            // 3. Field Anggota Kelompok (Opsional/Jika ada)
-                            _buildMinimalistTextField(
-                              controller: _anggotaController,
-                              hintText: 'Masukan nama rekan kelompok (Jika ada)',
-                              labelText: 'Anggota Kelompok',
-                              isRequired: false, 
-                              suffixIcon: const Icon(Icons.calendar_today, size: 20, color: Colors.grey),
-                              maxLines: 2,
-                            ),
-                            
-                            const SizedBox(height: 32),
+                      const SizedBox(height: 20),
 
-                            // Tombol "Ajukan Judul"
-                            SizedBox(
-                              width: double.infinity,
-                              child: ElevatedButton(
-                                onPressed: _isLoading ? null : _submitTugasAkhir,
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: _primaryColor,
-                                  foregroundColor: Colors.white, 
-                                  padding: const EdgeInsets.symmetric(vertical: 14),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(8),
+                      /// DESKRIPSI
+                      const Text(
+                        'Deskripsi Tugas Akhir *',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500,
+                          color: Colors.black87,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      TextFormField(
+                        controller: _descController,
+                        decoration: InputDecoration(
+                          hintText: 'Masukkan deskripsi tugas akhir...',
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: BorderSide(color: Colors.grey.shade300),
+                          ),
+                          contentPadding: const EdgeInsets.all(16),
+                          filled: true,
+                          fillColor: Colors.white,
+                        ),
+                        maxLines: 5,
+                      ),
+
+                      const SizedBox(height: 20),
+
+                      /// ANGGOTA
+                      const Text(
+                        'Anggota Kelompok (Opsional)',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500,
+                          color: Colors.black87,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+
+                      Column(
+                        children: List.generate(
+                          _anggotaControllers.length,
+                          (index) => Padding(
+                            padding: const EdgeInsets.only(bottom: 12),
+                            child: Row(
+                              children: [
+                                Expanded(
+                                  child: TextFormField(
+                                    controller: _anggotaControllers[index],
+                                    decoration: InputDecoration(
+                                      hintText: 'Masukkan NIM mahasiswa...',
+                                      border: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(8.0),
+                                      ),
+                                      enabledBorder: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(8.0),
+                                        borderSide: BorderSide(
+                                            color: Colors.grey.shade300),
+                                      ),
+                                      filled: true,
+                                      fillColor: Colors.white,
+                                    ),
+                                    // Tambahkan validator jika diperlukan
                                   ),
-                                  elevation: 2, 
                                 ),
-                                child: _isLoading
-                                    ? const SizedBox(
-                                        width: 20,
-                                        height: 20,
-                                        child: CircularProgressIndicator(
-                                          color: Colors.white,
-                                          strokeWidth: 2,
+                                const SizedBox(width: 8),
+                                InkWell(
+                                  onTap: () {
+                                    _tambahAnggotaField();
+                                  },
+                                  child: Container(
+                                    padding: const EdgeInsets.all(10),
+                                    decoration: BoxDecoration(
+                                      color: _anggotaControllers[index].text.trim().isNotEmpty
+                                          ? Colors.blue
+                                          : Colors.grey,
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    child: const Icon(
+                                      Icons.add,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                index > 0
+                                    ? InkWell(
+                                        onTap: () {
+                                          _hapusAnggotaField(index);
+                                        },
+                                        child: Container(
+                                          padding: const EdgeInsets.all(10),
+                                          decoration: BoxDecoration(
+                                            color: Colors.red,
+                                            borderRadius: BorderRadius.circular(8),
+                                          ),
+                                          child: const Icon(
+                                            Icons.remove,
+                                            color: Colors.white,
+                                          ),
                                         ),
                                       )
-                                    : const Text(
-                                        'Ajukan Judul',
-                                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                                    : Container(
+                                        padding: const EdgeInsets.all(10),
+                                        decoration: BoxDecoration(
+                                          color: Colors.grey,
+                                          borderRadius: BorderRadius.circular(8),
+                                        ),
+                                        child: const Icon(
+                                          Icons.remove,
+                                          color: Colors.white54,
+                                        ),
                                       ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+
+                      const SizedBox(height: 30),
+
+                      Center(
+                        child: _isLoading 
+                          ? const CircularProgressIndicator()
+                          : ElevatedButton(
+                              onPressed: _isLoading ? null : _submitTugasAkhir,
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.blue,
+                                foregroundColor: Colors.white,
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 40, vertical: 12),
+                                shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(8)),
+                                minimumSize: const Size(200, 48),
+                              ),
+                              child: const Text(
+                                'Ajukan Tugas Akhir',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                ),
                               ),
                             ),
-                          ],
-                        ),
                       ),
                     ],
                   ),

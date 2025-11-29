@@ -17,7 +17,7 @@ class TugasAkhirTab extends StatefulWidget {
 class _TugasAkhirTabState extends State<TugasAkhirTab> {
   late Future<List<dynamic>> _logsFuture;
   // Sesuaikan IP backend lo
-  final String _baseUrl = 'http://172.16.160.154:8000';
+  final String _baseUrl = 'http://172.16.41.188:8000';
 
   // Target bimbingan (misal minimal 8 kali)
   final int _targetBimbingan = 8;
@@ -56,6 +56,16 @@ class _TugasAkhirTabState extends State<TugasAkhirTab> {
       } else if (response.statusCode == 401) {
         _forceLogout();
         return [];
+      } else if (response.statusCode == 404) {
+        // Handle kasus saat belum ada tugas akhir
+        final responseBody = jsonDecode(response.body);
+        if (responseBody['message'] != null &&
+            responseBody['message'].toString().toLowerCase().contains('belum ada tugas akhir')) {
+          // Kembalikan list kosong jika belum ada tugas akhir
+          return [];
+        } else {
+          throw Exception('Gagal load log: ${response.statusCode} - ${response.body}');
+        }
       } else {
         throw Exception('Gagal load log: ${response.statusCode} - ${response.body}');
       }
@@ -87,7 +97,51 @@ class _TugasAkhirTabState extends State<TugasAkhirTab> {
             return const Center(child: CircularProgressIndicator());
           }
           if (snapshot.hasError) {
-            return Center(child: Text('Error: ${snapshot.error}', style: const TextStyle(color: Colors.red)));
+            // Cek apakah error karena belum ada tugas akhir
+            String errorText = snapshot.error.toString();
+            if (errorText.toLowerCase().contains('belum ada tugas akhir') ||
+                errorText.toLowerCase().contains('404')) {
+              return Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(32.0),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(Icons.assignment_outlined, size: 80, color: Colors.grey),
+                      const SizedBox(height: 16),
+                      const Text(
+                        'Belum ada tugas akhir',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.grey
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Silakan daftarkan tugas akhir terlebih dahulu',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.grey[600]
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            } else {
+              return Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(Icons.error_outline, size: 80, color: Colors.red),
+                    const SizedBox(height: 16),
+                    Text('Error: ${snapshot.error}',
+                         style: const TextStyle(color: Colors.red)),
+                  ],
+                ),
+              );
+            }
           }
 
           final allLogs = snapshot.data ?? [];
@@ -398,6 +452,8 @@ class _TugasAkhirTabState extends State<TugasAkhirTab> {
             const Icon(Icons.history_edu_outlined, size: 80, color: Colors.grey),
             const SizedBox(height: 16),
             const Text('Belum ada riwayat bimbingan.', style: TextStyle(color: Colors.grey)),
+            const SizedBox(height: 4),
+            Text('Tambahkan log bimbingan pertama Anda', style: TextStyle(color: Colors.grey[600])),
           ],
         ),
       ),
