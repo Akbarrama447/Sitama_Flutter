@@ -25,7 +25,7 @@ class _HomeTabState extends State<HomeTab> {
   DateTime? _selectedDay;
   FilterType _activeFilter = FilterType.none;
   late Future<List<dynamic>> _jadwalFuture;
-  final String _baseUrl = 'http://172.16.160.154:8000';
+  final String _baseUrl = 'http://172.16.165.144:8000';
   String _userName = 'User';
 
   @override

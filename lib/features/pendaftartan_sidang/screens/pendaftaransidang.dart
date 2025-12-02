@@ -1,38 +1,22 @@
 import 'package:flutter/material.dart';
 
-// Halaman dummy
-class DummyPage extends StatelessWidget {
-  final String title;
-  const DummyPage({super.key, required this.title});
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(title),
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black87,
-        elevation: 0.5,
-      ),
-      body: Center(
-        child: Text('Ini adalah halaman $title',
-            style: const TextStyle(fontSize: 24)),
-      ),
-    );
-  }
-}
+// ✅ PENTING: Import halaman InfoRevisiScreen
+// Pastikan path ini sesuai dengan struktur folder Anda
+import '../../tugas_akhir/screens/info_revisi_screen.dart';
+
+// Hapus DummyPage dan main() jika file ini bukan main entry point aplikasi Anda.
+// Jika ingin test run file ini sendirian, biarkan main() di bawah.
 
 class PendaftaranSidangPage extends StatefulWidget {
   const PendaftaranSidangPage({super.key});
 
   @override
-  State<PendaftaranSidangPage> createState() =>
-      _PendaftaranSidangPageState();
+  State<PendaftaranSidangPage> createState() => _PendaftaranSidangPageState();
 }
 
-class _PendaftaranSidangPageState
-    extends State<PendaftaranSidangPage> {
+class _PendaftaranSidangPageState extends State<PendaftaranSidangPage> {
   String? _selectedJadwal;
-  int _selectedIndex = 0; // Default ke index pertama (Home)
+  int _selectedIndex = 0; 
 
   final List<String> _listJadwal = [
     '01-12-2025, Senin 13.00-15.00 GKT - 806',
@@ -51,6 +35,7 @@ class _PendaftaranSidangPageState
   void _showKonfirmasiDialog() {
     showDialog(
       context: context,
+      barrierDismissible: false, // User harus pilih Ya atau Tidak
       builder: (BuildContext context) {
         return AlertDialog(
           titlePadding: EdgeInsets.zero,
@@ -68,8 +53,7 @@ class _PendaftaranSidangPageState
                   alignment: Alignment.topRight,
                   child: GestureDetector(
                     onTap: () => Navigator.of(context).pop(),
-                    child:
-                        const Icon(Icons.close, color: Colors.grey, size: 28),
+                    child: const Icon(Icons.close, color: Colors.grey, size: 28),
                   ),
                 ),
                 const SizedBox(height: 10),
@@ -93,13 +77,15 @@ class _PendaftaranSidangPageState
                   alignment: Alignment.bottomRight,
                   child: ElevatedButton(
                     onPressed: () {
+                      // 1. Tutup Dialog
                       Navigator.of(context).pop();
-                      _daftarSidang();
+                      
+                      // 2. Navigasi ke InfoRevisiScreen (Gambar ke-3)
+                      _navigasiKeInfoRevisi();
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: lightBlue,
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 25, vertical: 10),
+                      padding: const EdgeInsets.symmetric(horizontal: 25, vertical: 10),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(8),
                       ),
@@ -121,12 +107,29 @@ class _PendaftaranSidangPageState
     );
   }
 
-  void _daftarSidang() {
-    Navigator.push(
+  // ✅ Logika Navigasi Baru
+  void _navigasiKeInfoRevisi() {
+    Navigator.pushReplacement(
       context,
       MaterialPageRoute(
-        builder: (context) =>
-            const DummyPage(title: 'Pendaftaran Sidang Berhasil!'),
+        builder: (context) => InfoRevisiScreen(
+          // Kirim Status 'Revisi' agar tombol biru muncul (sesuai request)
+          hasilSidang: "Revisi", 
+          
+          // Kirim Data Dummy/Data Inputan
+          dataSidang: {
+            'namaMahasiswa': 'FARHAN DWI CAHYANTO',
+            'nimProdi': '3.34.24.2.11 - D3 Teknik Informatika',
+            'judulTA': 'Sensor Pendeteksi Semut', 
+            'deskripsiTA': 'Alat sensor pendeteksi...',
+            'dosenPembimbing': ['Pak Suko', 'Pak Amran'],
+            'dosenPenguji': ['Pak Suko', 'Pak Amran'],
+            'sekretaris': 'Wiktasari',
+            'labSidang': _selectedJadwal ?? 'Belum Dipilih',
+            'waktuSidang': 'Sesuai Jadwal',
+            'namaDosen': 'Suko Tyas',
+          },
+        ),
       ),
     );
   }
@@ -163,7 +166,7 @@ class _PendaftaranSidangPageState
             ),
           ),
 
-          // Custom "AppBar" / Header HANYA dengan Suko Tyas dan Garis Tipis
+          // Custom "AppBar" / Header
           Positioned(
             top: 0,
             left: 0,
@@ -185,7 +188,6 @@ class _PendaftaranSidangPageState
                           fontWeight: FontWeight.w500),
                     ),
                   ),
-                  // Garis horizontal tipis di bawah Suko Tyas
                   Container(
                     height: 1.0,
                     color: Colors.grey.shade300,
@@ -195,7 +197,7 @@ class _PendaftaranSidangPageState
             ),
           ),
 
-          // Card "Pendaftaran Sidang" (Kotak Putih Besar)
+          // Card "Pendaftaran Sidang"
           Positioned(
             top: screenSize.height * 0.22,
             left: 8,
@@ -221,10 +223,10 @@ class _PendaftaranSidangPageState
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: <Widget>[
-                      // Area Judul "Pendaftaran Sidang" (Paling Atas Kotak Putih)
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(20.0, 20.0, 20.0, 0),
-                        child: const Text(
+                      // Judul
+                      const Padding(
+                        padding: EdgeInsets.fromLTRB(20.0, 20.0, 20.0, 0),
+                        child: Text(
                           'Pendaftaran Sidang',
                           style: TextStyle(
                             fontSize: 22,
@@ -234,52 +236,55 @@ class _PendaftaranSidangPageState
                         ),
                       ),
 
-                      // Garis Pemisah Tipis di bawah Judul
                       const Padding(
                         padding: EdgeInsets.only(top: 20.0),
                         child: Divider(
                           color: dividerColor,
                           thickness: 1.0,
                           height: 1.0,
-                          indent: 0,
-                          endIndent: 0,
                         ),
                       ),
 
-                      // Konten Form (Judul Tugas Akhir & Jadwal)
+                      // Konten Form
                       Padding(
                         padding: const EdgeInsets.all(20.0),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            // Judul Final Tugas Akhir Field
-                            _buildLabelWithStar(
-                                label: 'Judul Final Tugas Akhir'),
-                            const SizedBox(height: 8),
-                            _buildTextField(
-                              hintText: 'Masukkan Judul Final Tugas Akhir',
+                            const Text(
+                              'Judul Final Tugas Akhir',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                                color: primaryTextColor,
+                              ),
                             ),
+                            const SizedBox(height: 8),
+                            _buildTextField(hintText: 'Masukkan Judul...'),
                             const SizedBox(height: 20),
 
-                            // Pilih Jadwal Sidang (Dropdown)
-                            _buildLabel(label: 'Pilih Jadwal Sidang'),
+                            const Text(
+                              'Pilih Jadwal Sidang',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                                color: primaryTextColor,
+                              ),
+                            ),
                             const SizedBox(height: 8),
-                            _buildDropdownField(), // Menggunakan Dropdown standar
-                            const SizedBox(height: 15), // Jarak sebelum garis
+                            _buildDropdownField(),
+                            const SizedBox(height: 15),
                           ],
                         ),
                       ),
 
-                      // Garis Pemisah Tipis di atas Tombol
                       const Divider(
                         color: dividerColor,
                         thickness: 1.0,
                         height: 1.0,
-                        indent: 0,
-                        endIndent: 0,
                       ),
 
-                      // Tombol Daftar Sidang Area
+                      // Tombol Daftar Sidang
                       Padding(
                         padding: const EdgeInsets.symmetric(vertical: 15.0),
                         child: Center(
@@ -349,43 +354,7 @@ class _PendaftaranSidangPageState
     );
   }
 
-  // Widget kustom untuk Label dengan Bintang Merah
-  Widget _buildLabelWithStar({required String label}) {
-    return Row(
-      children: <Widget>[
-        Text(
-          label,
-          style: const TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-            color: primaryTextColor,
-          ),
-        ),
-        const Text(
-          ' *',
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-            color: Colors.red,
-          ),
-        ),
-      ],
-    );
-  }
-
-  // Widget kustom untuk Label tanpa Bintang
-  Widget _buildLabel({required String label}) {
-    return Text(
-      label,
-      style: const TextStyle(
-        fontSize: 16,
-        fontWeight: FontWeight.w600,
-        color: primaryTextColor,
-      ),
-    );
-  }
-
-  // Widget kustom untuk TextField (PERBAIKAN PADDING)
+  // Widget Helper untuk TextField
   Widget _buildTextField({required String hintText}) {
     return Container(
       decoration: BoxDecoration(
@@ -405,7 +374,6 @@ class _PendaftaranSidangPageState
         decoration: InputDecoration(
           hintText: hintText,
           hintStyle: const TextStyle(color: greyTextColor, fontSize: 14),
-          // PERUBAHAN PENTING: contentPadding Vertikal dikurangi menjadi 10
           contentPadding:
               const EdgeInsets.symmetric(horizontal: 15, vertical: 10),
           border: InputBorder.none,
@@ -415,7 +383,7 @@ class _PendaftaranSidangPageState
     );
   }
 
-  // Dropdown Standard (PERBAIKAN PADDING)
+  // Widget Helper untuk Dropdown
   Widget _buildDropdownField() {
     return Container(
       decoration: BoxDecoration(
@@ -435,7 +403,6 @@ class _PendaftaranSidangPageState
         child: DropdownButton<String>(
           value: _selectedJadwal,
           hint: Padding(
-            // PERBAIKAN PADDING: Mengurangi padding vertikal menjadi 10
             padding: const EdgeInsets.symmetric(horizontal: 15.0, vertical: 10),
             child: Text(
               'Pilih jadwal yang tersedia',
@@ -446,7 +413,7 @@ class _PendaftaranSidangPageState
           icon: const Padding(
             padding: EdgeInsets.only(right: 10.0),
             child: Icon(Icons.keyboard_arrow_down,
-                color: Colors.grey, size: 24), // Ukuran ikon disesuaikan
+                color: Colors.grey, size: 24),
           ),
           elevation: 0,
           style: const TextStyle(color: Colors.black87, fontSize: 14),
@@ -468,39 +435,4 @@ class _PendaftaranSidangPageState
       ),
     );
   }
-
-  // Widget kustom untuk setiap item Bottom Nav Bar (Sesuai capsule design)
-  Widget _buildBottomNavItem(
-      IconData iconDataOutline, IconData iconDataFilled, int index) {
-    bool isSelected = _selectedIndex == index;
-    return GestureDetector(
-      onTap: () => _onItemTapped(index),
-      child: Container(
-        padding: isSelected
-            ? const EdgeInsets.symmetric(horizontal: 25, vertical: 8)
-            : const EdgeInsets.all(8),
-        decoration: isSelected
-            ? BoxDecoration(
-                color: lightBlueBg,
-                borderRadius: BorderRadius.circular(30),
-                border: Border.all(color: darkBlue, width: 1.5),
-              )
-            : null,
-        child: Icon(
-          isSelected ? iconDataFilled : iconDataOutline,
-          color: isSelected ? darkBlue : Colors.grey.shade600,
-          size: isSelected ? 28 : 28,
-        ),
-      ),
-    );
-  }
-}
-
-// Main App untuk menjalankan Halaman Pendaftaran Sidang
-void main() {
-  runApp(const MaterialApp(
-    title: 'Menu Sidang',
-    home: PendaftaranSidangPage(),
-    debugShowCheckedModeBanner: false,
-  ));
 }
