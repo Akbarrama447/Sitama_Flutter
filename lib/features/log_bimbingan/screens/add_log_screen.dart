@@ -1,4 +1,4 @@
-import 'dart:convert';
+// file: lib/features/tugas_akhir/screens/add_log_screen.dart
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -9,7 +9,10 @@ import '../../../main.dart';
 import '../../auth/screens/login_screen.dart';
 
 class AddLogScreen extends StatefulWidget {
-  const AddLogScreen({super.key});
+  final String pembimbingNama;
+  final int pembimbingUrutan;
+
+  const AddLogScreen({super.key, required this.pembimbingNama, required this.pembimbingUrutan});
 
   @override
   State<AddLogScreen> createState() => _AddLogScreenState();
@@ -23,11 +26,17 @@ class _AddLogScreenState extends State<AddLogScreen> {
   final _pembimbingController = TextEditingController();
 
   DateTime? _selectedDate;
-  File? _selectedFile;
-
+  PlatformFile? _pickedPlatformFile;
   bool _isLoading = false;
 
-  final String _baseUrl = 'http://192.168.1.14:8000';
+  // samakan base url
+  final String _baseUrl = 'http://192.168.1.8:8000';
+
+  @override
+  void initState() {
+    super.initState();
+    _pembimbingController.text = widget.pembimbingNama;
+  }
 
   Future<void> _selectDate(BuildContext context) async {
     final DateTime? picked = await showDatePicker(
@@ -41,36 +50,26 @@ class _AddLogScreenState extends State<AddLogScreen> {
     }
   }
 
-  PlatformFile? _pickedPlatformFile;
-
   Future<void> _pickFile() async {
     final result = await FilePicker.platform.pickFiles(withData: true);
     if (result != null) {
       setState(() {
         _pickedPlatformFile = result.files.first;
       });
-      print("Picked: ${_pickedPlatformFile!.name}");
+      if (kDebugMode) print("Picked: ${_pickedPlatformFile!.name}");
     }
   }
 
-
-  // ================================
-  //   FIXED SUBMIT (VALE VALID)
-  // ================================
   Future<void> _submitLog() async {
     if (!_formKey.currentState!.validate()) return;
 
     if (_selectedDate == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Pilih jadwal bimbingan')),
-      );
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Pilih jadwal bimbingan')));
       return;
     }
 
-        if (_pickedPlatformFile == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('File wajib diupload')),
-      );
+    if (_pickedPlatformFile == null) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('File wajib diupload')));
       return;
     }
 
@@ -84,24 +83,20 @@ class _AddLogScreenState extends State<AddLogScreen> {
       }
 
       final url = Uri.parse('$_baseUrl/api/log-bimbingan');
-
       var request = http.MultipartRequest('POST', url);
 
-      // field biasa
       request.fields['judul'] = _judulController.text.trim();
       request.fields['deskripsi'] = _deskripsiController.text.trim();
+      // kirim urutan (preferensi backend), tapi juga kirim nama sebagai fallback
+      request.fields['pembimbing_urutan'] = widget.pembimbingUrutan.toString();
       request.fields['pembimbing'] = _pembimbingController.text.trim();
-      request.fields['tanggal'] =
-          DateFormat('yyyy-MM-dd').format(_selectedDate!);
+      request.fields['tanggal'] = DateFormat('yyyy-MM-dd').format(_selectedDate!);
 
-      // FILE UPLOAD (WEB + ANDROID)
-      request.files.add(
-        http.MultipartFile.fromBytes(
-          'file_path',
-          _pickedPlatformFile!.bytes!,
-          filename: _pickedPlatformFile!.name,
-        ),
-      );
+      request.files.add(http.MultipartFile.fromBytes(
+        'file_path',
+        _pickedPlatformFile!.bytes!,
+        filename: _pickedPlatformFile!.name,
+      ));
 
       request.headers['Authorization'] = 'Bearer $token';
       request.headers['Accept'] = 'application/json';
@@ -109,9 +104,7 @@ class _AddLogScreenState extends State<AddLogScreen> {
       final response = await request.send();
 
       if (response.statusCode == 200 || response.statusCode == 201) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Log bimbingan berhasil ditambahkan')),
-        );
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Log bimbingan berhasil ditambahkan')));
         Navigator.pop(context, true);
       } else if (response.statusCode == 401) {
         _forceLogout();
@@ -121,8 +114,7 @@ class _AddLogScreenState extends State<AddLogScreen> {
       }
     } catch (e) {
       debugPrint("Error: $e");
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text('Error: $e')));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
     } finally {
       setState(() => _isLoading = false);
     }
@@ -130,23 +122,14 @@ class _AddLogScreenState extends State<AddLogScreen> {
 
   void _forceLogout() {
     storageService.deleteToken();
-    Navigator.pushAndRemoveUntil(
-      context,
-      MaterialPageRoute(builder: (context) => const LoginScreen()),
-      (route) => false,
-    );
+    Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (_) => const LoginScreen()), (route) => false);
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text(
-          'Tambah Log Bimbingan',
-          style: TextStyle(
-            color: Colors.white,
-          ),
-        ),
+        title: const Text('Tambah Log Bimbingan', style: TextStyle(color: Colors.white)),
         backgroundColor: const Color(0xFF03A9F4),
         iconTheme: const IconThemeData(color: Colors.white),
       ),
@@ -156,87 +139,53 @@ class _AddLogScreenState extends State<AddLogScreen> {
           key: _formKey,
           child: ListView(
             children: [
-              // JUDUL
               TextFormField(
                 controller: _judulController,
-                decoration: const InputDecoration(
-                  labelText: 'Judul Bimbingan',
-                  border: OutlineInputBorder(),
-                ),
-                validator: (value) =>
-                    value!.isEmpty ? 'Judul tidak boleh kosong' : null,
+                decoration: const InputDecoration(labelText: 'Judul Bimbingan', border: OutlineInputBorder()),
+                validator: (v) => v == null || v.isEmpty ? 'Judul tidak boleh kosong' : null,
               ),
               const SizedBox(height: 16),
 
-              // PEMBIMBING
+              // pembimbing otomatis (readOnly)
               TextFormField(
                 controller: _pembimbingController,
-                decoration: const InputDecoration(
-                  labelText: 'Nama Pembimbing',
-                  border: OutlineInputBorder(),
-                ),
-                validator: (value) =>
-                    value!.isEmpty ? 'Nama pembimbing wajib diisi' : null,
+                readOnly: true,
+                decoration: const InputDecoration(labelText: 'Nama Pembimbing', border: OutlineInputBorder()),
+                validator: (v) => v == null || v.isEmpty ? 'Nama pembimbing wajib diisi' : null,
               ),
               const SizedBox(height: 16),
 
-              // DESKRIPSI
               TextFormField(
                 controller: _deskripsiController,
-                decoration: const InputDecoration(
-                  labelText: 'Deskripsi',
-                  border: OutlineInputBorder(),
-                ),
+                decoration: const InputDecoration(labelText: 'Deskripsi', border: OutlineInputBorder()),
                 maxLines: 4,
-                validator: (value) =>
-                    value!.isEmpty ? 'Deskripsi tidak boleh kosong' : null,
+                validator: (v) => v == null || v.isEmpty ? 'Deskripsi tidak boleh kosong' : null,
               ),
               const SizedBox(height: 16),
 
-              // JADWAL
               InkWell(
                 onTap: () => _selectDate(context),
                 child: InputDecorator(
-                  decoration: const InputDecoration(
-                    labelText: 'Jadwal Bimbingan',
-                    border: OutlineInputBorder(),
-                  ),
-                  child: Text(
-                    _selectedDate == null
-                        ? 'Pilih tanggal'
-                        : DateFormat('EEEE, d MMMM yyyy', 'id_ID')
-                            .format(_selectedDate!),
-                  ),
+                  decoration: const InputDecoration(labelText: 'Jadwal Bimbingan', border: OutlineInputBorder()),
+                  child: Text(_selectedDate == null ? 'Pilih tanggal' : DateFormat('EEEE, d MMMM yyyy', 'id_ID').format(_selectedDate!)),
                 ),
               ),
               const SizedBox(height: 16),
 
-              // FILE UPLOAD
               ElevatedButton.icon(
                 onPressed: _pickFile,
                 icon: const Icon(Icons.upload_file),
-                label: Text(
-                  _selectedFile == null ? "Upload File" : "File dipilih ✔️",
-                ),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.grey[200],
-                  foregroundColor: Colors.black,
-                ),
+                label: Text(_pickedPlatformFile == null ? 'Upload File' : 'File dipilih: ${_pickedPlatformFile!.name}'),
+                style: ElevatedButton.styleFrom(backgroundColor: Colors.grey[200], foregroundColor: Colors.black),
               ),
               const SizedBox(height: 24),
 
-              // SIMPAN
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
                   onPressed: _isLoading ? null : _submitLog,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF03A9F4),
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                  ),
-                  child: _isLoading
-                      ? const CircularProgressIndicator(color: Colors.white)
-                      : const Text('Simpan'),
+                  style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF03A9F4), padding: const EdgeInsets.symmetric(vertical: 16)),
+                  child: _isLoading ? const CircularProgressIndicator(color: Colors.white) : const Text('Simpan'),
                 ),
               ),
             ],

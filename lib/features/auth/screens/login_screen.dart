@@ -5,6 +5,7 @@ import '../../../main.dart'; // Untuk akses storageService
 import '../../../core/services/api_service.dart';
 import '../../dashboard/screens/dashboard_screen.dart';
 import 'ganti_password_screen.dart';
+import 'package:sitama/core/services/storage_service.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -21,12 +22,9 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _isPasswordVisible = false;
   bool _rememberMe = false;
 
-  // Fungsi login (LOGIKA INI MASIH SAMA)
+  // Fungsi login (logika tetap sama, hanya penyimpanan profile diperbaiki)
   Future<void> _login() async {
-    // Validasi form
-    if (!_formKey.currentState!.validate()) {
-      return;
-    }
+    if (!_formKey.currentState!.validate()) return;
 
     setState(() {
       _isLoading = true;
@@ -46,29 +44,36 @@ class _LoginScreenState extends State<LoginScreen> {
       final responseBody = json.decode(response.body);
 
       if (response.statusCode == 200 && responseBody['token'] != null) {
-        // --- SUKSES LOGIN ---
         final token = responseBody['token'];
-          final userData = responseBody['user'];
-        
-          // Simpan token dan nama user ke storage
-          await storageService.saveToken(token);
-          if (userData != null && userData['nama'] != null) {
-            await storageService.saveUserName(userData['nama']);
-          }
+        final userData = responseBody['user'];
+
+        // --- FIXED: simpan token dan profile lengkap ---
+        await storageService.saveToken(token);
+
+        if (userData != null && userData is Map<String, dynamic>) {
+          // Pastikan semua field disimpan sebagai string
+          final profileData = {
+            'nama': userData['nama'] ?? '',
+            'nim': userData['nim']?.toString() ?? '',
+            'prodi': userData['prodi'] ?? '',
+            'jurusan': userData['jurusan'] ?? '',
+            'email': userData['email'] ?? '',
+            'tahun_masuk': userData['tahun_masuk']?.toString() ?? '',
+          };
+          await storageService.saveProfile(profileData);
+        }
 
         // Pindah ke Dashboard
         if (mounted) {
           Navigator.of(context).pushReplacement(
-            MaterialPageRoute(builder: (context) => const DashboardScreen()),
+            MaterialPageRoute(builder: (_) => const DashboardScreen()),
           );
         }
       } else {
-        // --- GAGAL LOGIN ---
         final message = responseBody['message'] ?? 'Login gagal. Cek email/password.';
         _showErrorDialog(message);
       }
     } catch (e) {
-      // --- ERROR KONEKSI/TIMEOUT ---
       _showErrorDialog('Gagal terhubung ke server. Cek koneksi internet Anda.');
     } finally {
       if (mounted) {
@@ -79,7 +84,7 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
-  // Helper untuk nampilin dialog error
+  // Helper untuk menampilkan dialog error
   void _showErrorDialog(String message) {
     if (mounted) {
       showDialog(
@@ -114,7 +119,6 @@ class _LoginScreenState extends State<LoginScreen> {
       backgroundColor: Colors.white,
       body: Stack(
         children: [
-          // Background
           Container(
             decoration: BoxDecoration(
               gradient: LinearGradient(
@@ -124,7 +128,6 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
             ),
           ),
-          // Konten Login
           Center(
             child: SingleChildScrollView(
               padding: const EdgeInsets.symmetric(horizontal: 32.0),
@@ -133,7 +136,6 @@ class _LoginScreenState extends State<LoginScreen> {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    // Logo Polines
                     Image.asset(
                       'assets/logo.png',
                       height: 120,
@@ -141,7 +143,6 @@ class _LoginScreenState extends State<LoginScreen> {
                       fit: BoxFit.contain,
                     ),
                     const SizedBox(height: 24),
-                    // Judul "SITAMA"
                     Text(
                       'SITAMA',
                       style: TextStyle(
@@ -161,9 +162,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                     ),
                     SizedBox(height: size.height * 0.05),
-
                     const SizedBox(height: 32),
-                    // Form Email dengan styling baru
                     TextFormField(
                       controller: _emailController,
                       decoration: _buildInputDecoration(
@@ -182,8 +181,6 @@ class _LoginScreenState extends State<LoginScreen> {
                       },
                     ),
                     const SizedBox(height: 16),
-
-                    // Form Password dengan styling baru
                     TextFormField(
                       controller: _passwordController,
                       obscureText: !_isPasswordVisible,
@@ -213,8 +210,6 @@ class _LoginScreenState extends State<LoginScreen> {
                       },
                     ),
                     const SizedBox(height: 16),
-
-                    // --- Baris "Ingat Saya" & "Lupa Password" ---
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
@@ -244,8 +239,6 @@ class _LoginScreenState extends State<LoginScreen> {
                       ],
                     ),
                     const SizedBox(height: 24),
-
-                    // Tombol Login dengan styling baru
                     const SizedBox(height: 8),
                     _isLoading
                         ? const Center(child: CircularProgressIndicator())
@@ -283,7 +276,6 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  // Helper untuk styling Tampilan Input
   InputDecoration _buildInputDecoration(
     String label,
     IconData prefixIcon, {
@@ -314,4 +306,3 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 }
-

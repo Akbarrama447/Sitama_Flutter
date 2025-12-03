@@ -35,7 +35,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     // Tentukan tema warna utama
     final ColorScheme kColorScheme = ColorScheme.fromSeed(
-      seedColor: const Color(0xFF1565C0), // Biru tua (sesuai desain)
+      seedColor: Colors.blue, // Biru tua (sesuai desain)
     );
 
     return MaterialApp(

@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import '../../../main.dart'; // Untuk akses storageService
 import '../../auth/screens/login_screen.dart'; // Untuk halaman login
-
 // --- IMPORT TAB KITA ---
 import '../../profile/screens/profile_tab.dart';
 import '../../home/screens/home_tab.dart'; // <-- BARU
@@ -19,7 +18,7 @@ class DashboardScreen extends StatefulWidget {
 class _DashboardScreenState extends State<DashboardScreen> {
   int _selectedIndex = 0; // Halaman yang sedang aktif
   String _userName = 'User';
-  final String _baseUrl = 'http://192.168.1.14:8000';
+  final String _baseUrl = 'http://192.168.1.8:8000';
 
   @override
   void initState() {
