@@ -34,7 +34,7 @@ dependencies:
   shared_preferences: ^2.2.3
   table_calendar: ^3.0.9
   intl: ^0.20.2
-  file_picker: ^8.0.0+1
+  file_picker: ^10.3.7
 
   # Localization support
   flutter_localization: ^0.1.14

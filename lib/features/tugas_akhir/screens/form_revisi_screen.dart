@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:file_picker/file_picker.dart'; // Import wajib untuk pilih file
 
 // Definisi Warna
 const Color _primaryColor = Color(0xFF149BF6);
@@ -26,6 +27,28 @@ class _FormRevisiScreenState extends State<FormRevisiScreen> {
     super.dispose();
   }
 
+  // --- LOGIKA PILIH FILE (BARU) ---
+  Future<void> _pickFile() async {
+    // Membuka dialog pilih file
+    FilePickerResult? result = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: ['pdf', 'doc', 'docx'], // Hanya boleh pilih PDF/Word
+    );
+
+    if (result != null) {
+      PlatformFile file = result.files.first;
+
+      setState(() {
+        _fileName = file.name; // Ambil nama file
+        _revisianController.text = _fileName; // Tampilkan di inputan
+      });
+      
+      // Info: File aslinya ada di 'file.bytes' (Web) atau 'file.path' (HP)
+    } else {
+      // User batal memilih
+    }
+  }
+
   // --- LOGIKA UPLOAD ---
   Future<void> _handleUpload() async {
     if (!_formKey.currentState!.validate()) return;
@@ -50,13 +73,6 @@ class _FormRevisiScreenState extends State<FormRevisiScreen> {
       // Kirim sinyal sukses ke halaman sebelumnya
       Navigator.pop(context, true);
     }
-  }
-
-  void _pickFile() {
-    setState(() {
-      _fileName = 'Dokumen_Revisi_Final_v1.pdf';
-      _revisianController.text = _fileName;
-    });
   }
 
   // --- WIDGET HELPER ---
@@ -140,7 +156,7 @@ class _FormRevisiScreenState extends State<FormRevisiScreen> {
     );
   }
 
-  // --- BAGIAN UTAMA (YANG KITA UBAH TADI) ---
+  // --- BUILD UTAMA ---
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -149,7 +165,6 @@ class _FormRevisiScreenState extends State<FormRevisiScreen> {
         preferredSize: const Size.fromHeight(80.0),
         child: _buildTopHeader('Suko Tyas'),
       ),
-      // Stack dihapus, langsung SingleChildScrollView
       body: SingleChildScrollView(
         child: Column(
           children: [
@@ -189,15 +204,15 @@ class _FormRevisiScreenState extends State<FormRevisiScreen> {
                       hint: 'Masukkan judul revisi',
                     ),
 
-                    // Input File Revisian
+                    // Input File Revisian (DENGAN FILE PICKER)
                     _buildTextField(
                       controller: _revisianController,
                       label: 'Revisian',
-                      hint: 'revisian.pdf',
-                      readOnly: true,
+                      hint: 'Pilih file PDF/Doc...',
+                      readOnly: true, // Tidak bisa diketik manual
                       suffixIcon: const Icon(Icons.note_add_outlined,
                           color: _primaryColor),
-                      onSuffixTap: _pickFile,
+                      onSuffixTap: _pickFile, // Panggil fungsi pilih file
                     ),
 
                     const SizedBox(height: 30),
