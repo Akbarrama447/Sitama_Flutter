@@ -344,7 +344,7 @@ class _ProfileTabState extends State<ProfileTab> {
               ),
 
               // Tombol Logout
-              Container(
+              SizedBox(
                 width: double.infinity,
                 height: 55,
                 child: ElevatedButton.icon(

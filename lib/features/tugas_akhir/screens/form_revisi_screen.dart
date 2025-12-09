@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 
-// Definisi Warna (Sesuaikan dengan tema aplikasi Anda)
+// Definisi Warna
 const Color _primaryColor = Color(0xFF149BF6);
-const Color _uploadButtonColor = Color(0xFF03A9F4); 
+const Color _uploadButtonColor = Color(0xFF03A9F4);
 
 class FormRevisiScreen extends StatefulWidget {
   const FormRevisiScreen({super.key});
@@ -14,10 +14,10 @@ class FormRevisiScreen extends StatefulWidget {
 class _FormRevisiScreenState extends State<FormRevisiScreen> {
   final _formKey = GlobalKey<FormState>();
   final TextEditingController _judulController = TextEditingController();
-  final TextEditingController _revisianController = TextEditingController(); 
-  
+  final TextEditingController _revisianController = TextEditingController();
+
   bool _isUploading = false;
-  String _fileName = ''; // Nama file kosong di awal
+  String _fileName = '';
 
   @override
   void dispose() {
@@ -29,35 +29,32 @@ class _FormRevisiScreenState extends State<FormRevisiScreen> {
   // --- LOGIKA UPLOAD ---
   Future<void> _handleUpload() async {
     if (!_formKey.currentState!.validate()) return;
-    
-    // Validasi tambahan untuk file
+
     if (_fileName.isEmpty) {
-       ScaffoldMessenger.of(context).showSnackBar(
+      ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Harap pilih file revisi terlebih dahulu.')),
-       );
-       return;
+      );
+      return;
     }
 
     setState(() => _isUploading = true);
-    
-    // Simulasikan proses upload ke server (Delay 2 detik)
+
+    // Simulasikan proses upload
     await Future.delayed(const Duration(seconds: 2));
 
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Revisi berhasil diupload!')),
       );
-      
-      // ✅ KUNCI PENTING: Kirim nilai 'true' saat kembali
-      // Ini memberi tahu halaman sebelumnya bahwa upload SUKSES
-      Navigator.pop(context, true); 
+
+      // Kirim sinyal sukses ke halaman sebelumnya
+      Navigator.pop(context, true);
     }
   }
 
-  // Simulasi pilih file
   void _pickFile() {
     setState(() {
-      _fileName = 'Dokumen_Revisi_Final_v1.pdf'; // Simulasi nama file
+      _fileName = 'Dokumen_Revisi_Final_v1.pdf';
       _revisianController.text = _fileName;
     });
   }
@@ -74,10 +71,9 @@ class _FormRevisiScreenState extends State<FormRevisiScreen> {
           Text(
             title,
             style: TextStyle(
-              fontSize: 16, 
-              fontWeight: FontWeight.w600, 
-              color: Colors.grey.shade700
-            ),
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: Colors.grey.shade700),
           ),
         ],
       ),
@@ -108,7 +104,8 @@ class _FormRevisiScreenState extends State<FormRevisiScreen> {
           decoration: InputDecoration(
             hintText: hint,
             hintStyle: TextStyle(color: Colors.grey.shade400, fontSize: 14),
-            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+            contentPadding:
+                const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(6),
               borderSide: BorderSide(color: Colors.grey.shade300),
@@ -143,127 +140,104 @@ class _FormRevisiScreenState extends State<FormRevisiScreen> {
     );
   }
 
+  // --- BAGIAN UTAMA (YANG KITA UBAH TADI) ---
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: _primaryColor, // Latar belakang biru
+      backgroundColor: _primaryColor,
       appBar: PreferredSize(
         preferredSize: const Size.fromHeight(80.0),
-        child: _buildTopHeader('Suko Tyas'), 
+        child: _buildTopHeader('Suko Tyas'),
       ),
-      body: Stack(
-        children: [
-          SingleChildScrollView(
-            child: Column(
-              children: [
-                // Card Putih Form
-                Container(
-                  margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                  padding: const EdgeInsets.all(20.0),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(12),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.1),
-                        blurRadius: 10,
-                        offset: const Offset(0, 5),
-                      ),
-                    ],
-                  ),
-                  child: Form(
-                    key: _formKey,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'Upload Revisi',
-                          style: TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.black87,
-                          ),
-                        ),
-                        const SizedBox(height: 25),
-
-                        // Input Judul
-                        _buildTextField(
-                          controller: _judulController,
-                          label: 'Judul',
-                          hint: 'Masukkan judul revisi',
-                        ),
-
-                        // Input File Revisian
-                        _buildTextField(
-                          controller: _revisianController,
-                          label: 'Revisian',
-                          hint: 'revisian.pdf',
-                          readOnly: true,
-                          suffixIcon: const Icon(Icons.note_add_outlined, color: _primaryColor),
-                          onSuffixTap: _pickFile,
-                        ),
-                        
-                        const SizedBox(height: 30),
-
-                        // Tombol Upload
-                        SizedBox(
-                          width: double.infinity,
-                          child: ElevatedButton(
-                            onPressed: _isUploading ? null : _handleUpload,
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: _uploadButtonColor,
-                              foregroundColor: Colors.white,
-                              padding: const EdgeInsets.symmetric(vertical: 14),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                              elevation: 0,
-                            ),
-                            child: _isUploading
-                                ? const SizedBox(
-                                    width: 20,
-                                    height: 20,
-                                    child: CircularProgressIndicator(
-                                      color: Colors.white,
-                                      strokeWidth: 2,
-                                    ),
-                                  )
-                                : const Text(
-                                    'Upload',
-                                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                                  ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                // Padding bawah agar tidak tertutup nav bar
-                const SizedBox(height: 100), 
-              ],
-            ),
-          ),
-          
-          // Bottom Navigation Bar (Visual Saja)
-          Align(
-            alignment: Alignment.bottomCenter,
-            child: Container(
-              height: 65, 
+      // Stack dihapus, langsung SingleChildScrollView
+      body: SingleChildScrollView(
+        child: Column(
+          children: [
+            Container(
+              margin: const EdgeInsets.fromLTRB(16, 60, 16, 16),
+              padding: const EdgeInsets.all(20.0),
               decoration: BoxDecoration(
                 color: Colors.white,
-                borderRadius: BorderRadius.circular(35),
-                border: Border.all(color: Colors.grey.shade300)
-              ),
-              margin: const EdgeInsets.only(bottom: 20, left: 40, right: 40),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                children: <Widget>[
-                  IconButton(icon: const Icon(Icons.home_outlined, size: 28), color: Colors.grey, onPressed: () {}),
-                  IconButton(icon: const Icon(Icons.school_outlined, size: 28), color: _primaryColor, onPressed: () {}),
-                  IconButton(icon: const Icon(Icons.person_outline, size: 28), color: Colors.grey, onPressed: () {}),
+                borderRadius: BorderRadius.circular(12),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.1),
+                    blurRadius: 10,
+                    offset: const Offset(0, 5),
+                  ),
                 ],
               ),
+              child: Form(
+                key: _formKey,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Upload Revisi',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black87,
+                      ),
+                    ),
+                    const SizedBox(height: 25),
+
+                    // Input Judul
+                    _buildTextField(
+                      controller: _judulController,
+                      label: 'Judul',
+                      hint: 'Masukkan judul revisi',
+                    ),
+
+                    // Input File Revisian
+                    _buildTextField(
+                      controller: _revisianController,
+                      label: 'Revisian',
+                      hint: 'revisian.pdf',
+                      readOnly: true,
+                      suffixIcon: const Icon(Icons.note_add_outlined,
+                          color: _primaryColor),
+                      onSuffixTap: _pickFile,
+                    ),
+
+                    const SizedBox(height: 30),
+
+                    // Tombol Upload
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        onPressed: _isUploading ? null : _handleUpload,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: _uploadButtonColor,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8)),
+                          elevation: 0,
+                        ),
+                        child: _isUploading
+                            ? const SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(
+                                  color: Colors.white,
+                                  strokeWidth: 2,
+                                ),
+                              )
+                            : const Text(
+                                'Upload',
+                                style: TextStyle(
+                                    fontSize: 16, fontWeight: FontWeight.bold),
+                              ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ),
-          ),
-        ],
+            const SizedBox(height: 40),
+          ],
+        ),
       ),
     );
   }

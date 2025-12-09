@@ -1,6 +1,4 @@
-import 'dart:convert';
 import 'dart:io';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
@@ -27,7 +25,7 @@ class _AddLogScreenState extends State<AddLogScreen> {
 
   bool _isLoading = false;
 
-  final String _baseUrl = 'http://172.16.165.144:8000';
+  final String _baseUrl = 'http://localhost:8000';
 
   Future<void> _selectDate(BuildContext context) async {
     final DateTime? picked = await showDatePicker(

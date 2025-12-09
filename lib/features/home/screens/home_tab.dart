@@ -25,7 +25,7 @@ class _HomeTabState extends State<HomeTab> {
   DateTime? _selectedDay;
   FilterType _activeFilter = FilterType.none;
   late Future<List<dynamic>> _jadwalFuture;
-  final String _baseUrl = 'http://172.16.165.144:8000';
+  final String _baseUrl = 'http://localhost:8000';
   String _userName = 'User';
 
   @override
@@ -271,10 +271,10 @@ class _HomeTabState extends State<HomeTab> {
                   final height = MediaQuery.of(context).size.height;
                   return ConstrainedBox(
                     constraints: BoxConstraints(minHeight: height * 0.35),
-                    child: Center(
+                    child: const Center(
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
-                        children: const [
+                        children: [
                           Icon(Icons.calendar_month_outlined, size: 120, color: Color(0xFFB6A4E6)),
                           SizedBox(height: 24),
                           Padding(
@@ -344,8 +344,8 @@ class _HomeTabState extends State<HomeTab> {
                 // Header with gradient and welcome text
                 Container(
                   height: 160,
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(colors: [const Color(0xFFE8F2FF), Colors.white], begin: Alignment.topLeft, end: Alignment.bottomRight),
+                  decoration: const BoxDecoration(
+                    gradient: LinearGradient(colors: [Color(0xFFE8F2FF), Colors.white], begin: Alignment.topLeft, end: Alignment.bottomRight),
                   ),
                   child: Padding(
                     padding: const EdgeInsets.fromLTRB(20, 28, 20, 16),
@@ -394,12 +394,12 @@ class _HomeTabState extends State<HomeTab> {
                             },
                             onPageChanged: (focusedDay) => setState(() => _focusedDay = focusedDay),
                             daysOfWeekStyle: const DaysOfWeekStyle(weekdayStyle: TextStyle(fontWeight: FontWeight.bold, color: Colors.black54), weekendStyle: TextStyle(fontWeight: FontWeight.bold, color: Colors.black54)),
-                            calendarStyle: CalendarStyle(
-                              weekendTextStyle: const TextStyle(color: Colors.black54),
-                              todayDecoration: const BoxDecoration(color: Color(0xFFE8F5FF), shape: BoxShape.circle),
-                              todayTextStyle: const TextStyle(color: Colors.black87),
-                              selectedDecoration: const BoxDecoration(color: blueMain, shape: BoxShape.circle),
-                              selectedTextStyle: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                            calendarStyle: const CalendarStyle(
+                              weekendTextStyle: TextStyle(color: Colors.black54),
+                              todayDecoration: BoxDecoration(color: Color(0xFFE8F5FF), shape: BoxShape.circle),
+                              todayTextStyle: TextStyle(color: Colors.black87),
+                              selectedDecoration: BoxDecoration(color: blueMain, shape: BoxShape.circle),
+                              selectedTextStyle: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
                             ),
                           ),
                         ]),

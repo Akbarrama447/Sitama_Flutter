@@ -6,7 +6,7 @@ import '../../../main.dart'; // Untuk akses storageService
 import '../../auth/screens/login_screen.dart';
 
 class UbahPasswordScreen extends StatefulWidget {
-  const UbahPasswordScreen({Key? key}) : super(key: key);
+  const UbahPasswordScreen({super.key});
 
   @override
   State<UbahPasswordScreen> createState() => _UbahPasswordScreenState();
@@ -55,7 +55,7 @@ class _UbahPasswordScreenState extends State<UbahPasswordScreen> {
       return;
     }
 
-    final url = ApiService.gantiPasswordUrl;
+    const url = ApiService.gantiPasswordUrl;
     final headers = {
       'Content-Type': 'application/json',
       'Authorization': 'Bearer $token', // Tambahkan Bearer token

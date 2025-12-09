@@ -17,7 +17,7 @@ class TugasAkhirTab extends StatefulWidget {
 class _TugasAkhirTabState extends State<TugasAkhirTab> {
   late Future<List<dynamic>> _logsFuture;
   // Sesuaikan IP backend lo
-  final String _baseUrl = 'http://172.16.165.144:8000';
+  final String _baseUrl = 'http://localhost:8000';
 
   // Target bimbingan (misal minimal 8 kali)
   final int _targetBimbingan = 8;
@@ -166,11 +166,11 @@ class _TugasAkhirTabState extends State<TugasAkhirTab> {
                 // Link Cetak (Placeholder)
                 InkWell(
                   onTap: () => debugPrint('Cetak diklik'),
-                  child: Row(
+                  child: const Row(
                     children: [
-                      const Icon(Icons.print_outlined, size: 16, color: Colors.grey),
-                      const SizedBox(width: 4),
-                      const Text('Cetak lembar persetujuan', style: TextStyle(fontSize: 12, color: Colors.grey)),
+                      Icon(Icons.print_outlined, size: 16, color: Colors.grey),
+                      SizedBox(width: 4),
+                      Text('Cetak lembar persetujuan', style: TextStyle(fontSize: 12, color: Colors.grey)),
                     ],
                   ),
                 )
@@ -222,11 +222,11 @@ class _TugasAkhirTabState extends State<TugasAkhirTab> {
                     color: const Color(0xFF039BE5),
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child: Column(
+                  child: const Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const Icon(Icons.assignment_outlined, color: Colors.white),
-                      const Text('Kontrol', style: TextStyle(color: Colors.white, fontSize: 9)),
+                      Icon(Icons.assignment_outlined, color: Colors.white),
+                      Text('Kontrol', style: TextStyle(color: Colors.white, fontSize: 9)),
                     ],
                   ),
                 ),
@@ -390,14 +390,14 @@ class _TugasAkhirTabState extends State<TugasAkhirTab> {
   }
 
   Widget _buildEmptyState() {
-    return Center(
+    return const Center(
       child: Padding(
-        padding: const EdgeInsets.all(32.0),
+        padding: EdgeInsets.all(32.0),
         child: Column(
           children: [
-            const Icon(Icons.history_edu_outlined, size: 80, color: Colors.grey),
-            const SizedBox(height: 16),
-            const Text('Belum ada riwayat bimbingan.', style: TextStyle(color: Colors.grey)),
+            Icon(Icons.history_edu_outlined, size: 80, color: Colors.grey),
+            SizedBox(height: 16),
+            Text('Belum ada riwayat bimbingan.', style: TextStyle(color: Colors.grey)),
           ],
         ),
       ),

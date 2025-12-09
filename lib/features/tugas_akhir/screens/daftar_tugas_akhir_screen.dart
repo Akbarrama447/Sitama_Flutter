@@ -24,13 +24,13 @@ class _DaftarTugasAkhirScreenState extends State<DaftarTugasAkhirScreen> {
   final _deskripsiController = TextEditingController(); 
   final _anggotaController = TextEditingController();
   
-  bool _isLoading = false;
+  final bool _isLoading = false;
   
   // LOGIKA FETCHING DATA
   late Future<Map<String, dynamic>?> _tugasAkhirStatusFuture;
   Map<String, dynamic>? _taData; 
 
-  final String _baseUrl = 'http://172.16.165.144:8000';
+  final String _baseUrl = 'http://localhost:8000';
   
   static const Color _primaryColor = Color(0xFF03A9F4);
   static const Color _backgroundColor = Color(0xFFF0F4F8); 

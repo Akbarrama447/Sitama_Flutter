@@ -6,7 +6,7 @@ import '../../../main.dart'; // Untuk akses storageService
 import 'login_screen.dart';
 
 class GantiPasswordScreen extends StatefulWidget {
-  const GantiPasswordScreen({Key? key}) : super(key: key);
+  const GantiPasswordScreen({super.key});
 
   @override
   State<GantiPasswordScreen> createState() => _GantiPasswordScreenState();

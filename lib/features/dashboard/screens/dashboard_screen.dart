@@ -19,7 +19,7 @@ class DashboardScreen extends StatefulWidget {
 class _DashboardScreenState extends State<DashboardScreen> {
   int _selectedIndex = 0; // Halaman yang sedang aktif
   String _userName = 'Mahasiswa';
-  final String _baseUrl = 'http://172.16.165.144:8000';
+  final String _baseUrl = 'http://localhost:8000';
 
   @override
   void initState() {
@@ -58,7 +58,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     const TugasAkhirTab(), // <-- DIGANTI
 
     // Index 2: Profil
-    ProfileTab(),
+    const ProfileTab(),
   ];
 
 
@@ -143,8 +143,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 label: 'Home',
               ),
               BottomNavigationBarItem(
-                icon: const Icon(Icons.school_outlined),
-                activeIcon: const Icon(Icons.school),
+                icon: Icon(Icons.school_outlined),
+                activeIcon: Icon(Icons.school),
                 label: 'TA',
               ),
               BottomNavigationBarItem(
