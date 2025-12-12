@@ -24,8 +24,9 @@ class _HomeTabState extends State<HomeTab> {
   DateTime _focusedDay = DateTime.now();
   DateTime? _selectedDay;
   FilterType _activeFilter = FilterType.none;
+  String _searchQuery = '';
   late Future<List<dynamic>> _jadwalFuture;
-  final String _baseUrl = 'http://172.16.41.188:8000';
+  final String _baseUrl = 'http://localhost:8000';
   String _userName = 'User';
 
   @override
@@ -81,7 +82,7 @@ class _HomeTabState extends State<HomeTab> {
                     Navigator.pop(context);
                     Navigator.push(
                       context,
-                      MaterialPageRoute(builder: (context) => const PendaftaranSidangPage()),
+                      MaterialPageRoute(builder: (context) => const PersyaratanSidangScreen()),
                     );
                   },
                 ),
@@ -157,17 +158,32 @@ class _HomeTabState extends State<HomeTab> {
   }
 
   List<dynamic> _filterAndSortList(List<dynamic> list) {
-    final dailySchedules = List.from(list);
+    // Filter berdasarkan search query terlebih dahulu
+    List<dynamic> filteredList = _searchQuery.isEmpty
+        ? List.from(list)
+        : list.where((jadwal) {
+            final String nama = (jadwal['nama'] as String?)?.toLowerCase() ?? '';
+            final String judul = (jadwal['judul'] as String?)?.toLowerCase() ?? '';
+            final String tempat = (jadwal['tempat'] as String?)?.toLowerCase() ?? '';
+            final String jam = (jadwal['jam'] as String?)?.toLowerCase() ?? '';
+
+            return nama.contains(_searchQuery.toLowerCase()) ||
+                   judul.contains(_searchQuery.toLowerCase()) ||
+                   tempat.contains(_searchQuery.toLowerCase()) ||
+                   jam.contains(_searchQuery.toLowerCase());
+          }).toList();
+
+    // Lalu lakukan sorting berdasarkan filter type
     switch (_activeFilter) {
       case FilterType.room:
-        dailySchedules.sort((a, b) {
+        filteredList.sort((a, b) {
           final String tempatA = (a['tempat'] as String?) ?? '';
           final String tempatB = (b['tempat'] as String?) ?? '';
           return tempatA.compareTo(tempatB);
         });
         break;
       case FilterType.time:
-        dailySchedules.sort((a, b) {
+        filteredList.sort((a, b) {
           try {
             final String jamA = (a['jam'] as String?) ?? '';
             final String jamB = (b['jam'] as String?) ?? '';
@@ -182,7 +198,54 @@ class _HomeTabState extends State<HomeTab> {
       case FilterType.none:
         break;
     }
-    return dailySchedules;
+    return filteredList;
+  }
+
+  void _showSearchDialog() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Cari Kegiatan'),
+          content: TextField(
+            decoration: const InputDecoration(
+              hintText: 'Masukkan nama, judul, tempat atau waktu...',
+              prefixIcon: Icon(Icons.search),
+            ),
+            autofocus: true,
+            textInputAction: TextInputAction.search,
+            onChanged: (value) {
+              setState(() {
+                _searchQuery = value;
+              });
+            },
+            onSubmitted: (value) {
+              setState(() {
+                _searchQuery = value;
+              });
+              Navigator.of(context).pop();
+            },
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                setState(() {
+                  _searchQuery = '';
+                });
+                Navigator.of(context).pop();
+              },
+              child: const Text('Hapus'),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: const Text('OK'),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   String _selectedMonthLabel(DateTime d) {
@@ -388,6 +451,7 @@ class _HomeTabState extends State<HomeTab> {
                                 setState(() {
                                   _selectedDay = selectedDay;
                                   _focusedDay = focusedDay;
+                                  _searchQuery = ''; // Reset search query saat tanggal berubah
                                   _jadwalFuture = _fetchJadwal(selectedDay);
                                 });
                               }
@@ -413,24 +477,74 @@ class _HomeTabState extends State<HomeTab> {
                 // Title and filter
                 Padding(
                   padding: const EdgeInsets.fromLTRB(20, 8, 20, 8),
-                  child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-                    const Text('Jadwal Sidang Tugas Akhir', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
-                    PopupMenuButton<FilterType>(
-                      onSelected: (FilterType result) => setState(() => _activeFilter = result),
-                      itemBuilder: (BuildContext context) {
-                        final items = <PopupMenuEntry<FilterType>>[
-                          const PopupMenuItem<FilterType>(value: FilterType.time, child: Text('Urutkan berdasarkan Waktu')),
-                          const PopupMenuItem<FilterType>(value: FilterType.room, child: Text('Urutkan berdasarkan Ruangan')),
-                        ];
-                        if (_activeFilter != FilterType.none) {
-                          items.add(const PopupMenuDivider());
-                          items.add(const PopupMenuItem<FilterType>(value: FilterType.none, child: Text('Hapus Pengurutan')));
-                        }
-                        return items;
-                      },
-                      icon: Icon(Icons.filter_list, color: _activeFilter != FilterType.none ? blueMain : Colors.black54),
-                    )
-                  ]),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+                        const Text('Jadwal Sidang Tugas Akhir', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
+                        Row(
+                          children: [
+                            IconButton(
+                              icon: Icon(Icons.search, color: _searchQuery.isNotEmpty ? blueMain : Colors.black54),
+                              onPressed: () => _showSearchDialog(),
+                            ),
+                            PopupMenuButton<FilterType>(
+                              onSelected: (FilterType result) => setState(() => _activeFilter = result),
+                              itemBuilder: (BuildContext context) {
+                                final items = <PopupMenuEntry<FilterType>>[
+                                  const PopupMenuItem<FilterType>(value: FilterType.time, child: Text('Urutkan berdasarkan Waktu')),
+                                  const PopupMenuItem<FilterType>(value: FilterType.room, child: Text('Urutkan berdasarkan Ruangan')),
+                                ];
+                                if (_activeFilter != FilterType.none || _searchQuery.isNotEmpty) {
+                                  items.add(const PopupMenuDivider());
+                                  items.add(const PopupMenuItem<FilterType>(value: FilterType.none, child: Text('Hapus Pengurutan')));
+                                }
+                                return items;
+                              },
+                              icon: Icon(Icons.filter_list, color: _activeFilter != FilterType.none || _searchQuery.isNotEmpty ? blueMain : Colors.black54),
+                            ),
+                          ],
+                        )
+                      ]),
+                      if (_searchQuery.isNotEmpty)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 8.0),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                            decoration: BoxDecoration(
+                              color: blueMain.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  'Mencari: "$_searchQuery"',
+                                  style: TextStyle(
+                                    color: blueMain,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                GestureDetector(
+                                  onTap: () {
+                                    setState(() {
+                                      _searchQuery = '';
+                                    });
+                                  },
+                                  child: Icon(
+                                    Icons.clear,
+                                    size: 16,
+                                    color: blueMain,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
                 ),
 
                 // Schedule

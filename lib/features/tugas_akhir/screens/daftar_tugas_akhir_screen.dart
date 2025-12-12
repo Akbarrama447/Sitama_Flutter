@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../../core/services/api_service.dart';
+import 'detail_tugas_akhir_screen.dart';
 
 class DaftarTugasAkhirScreen extends StatefulWidget {
   const DaftarTugasAkhirScreen({super.key});
@@ -13,7 +14,11 @@ class _DaftarTugasAkhirScreenState extends State<DaftarTugasAkhirScreen> {
   final TextEditingController _titleController = TextEditingController();
   final TextEditingController _descController = TextEditingController();
   bool _isLoading = false;
-  
+  bool _checkingThesisStatus =
+      true; // Menandai apakah sedang memeriksa status tugas akhir
+  bool _hasThesis = false; // Menandai apakah user sudah memiliki tugas akhir
+  String? _token; // Menyimpan token untuk digunakan saat navigasi
+
   // Daftar mahasiswa
   final List<Map<String, String>> _daftarMahasiswa = [
     {'nim': '110124421', 'nama': 'Rivan Dwi Cahyanto'},
@@ -29,14 +34,95 @@ class _DaftarTugasAkhirScreenState extends State<DaftarTugasAkhirScreen> {
 
   // Daftar controller untuk setiap field anggota
   List<TextEditingController> _anggotaControllers = [TextEditingController()];
-  
+
+  @override
+  void initState() {
+    super.initState();
+    _checkThesisStatus(); // Memeriksa apakah user sudah memiliki tugas akhir saat layar dimuat
+  }
+
+  // Fungsi untuk memeriksa status tugas akhir user
+  Future<void> _checkThesisStatus() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String? token = prefs.getString('token');
+
+    if (token == null) {
+      // Coba beberapa kemungkinan key token
+      token = prefs.getString('access_token') ??
+          prefs.getString('bearer_token') ??
+          prefs.getString('auth_token');
+    }
+
+    if (token == null) {
+      if (mounted) {
+        setState(() {
+          _checkingThesisStatus = false;
+        });
+
+        // Tampilkan pesan bahwa user perlu login
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text("Anda belum login. Silakan login terlebih dahulu."),
+            backgroundColor: Colors.orange,
+          ),
+        );
+      }
+      return;
+    }
+
+    // Simpan token untuk digunakan saat navigasi ke detail
+    setState(() {
+      _token = token;
+    });
+
+    try {
+      final response = await ApiService.getThesis(token);
+      if (response['status'] == 'success') {
+        // Jika respons sukses, periksa apakah data null atau tidak
+        if (response['data'] != null) {
+          // Jika data tidak null, berarti user sudah memiliki tugas akhir
+          if (mounted) {
+            setState(() {
+              _hasThesis = true;
+              _checkingThesisStatus = false;
+            });
+          }
+        } else {
+          // Jika data null, berarti user belum memiliki tugas akhir
+          if (mounted) {
+            setState(() {
+              _hasThesis = false;
+              _checkingThesisStatus = false;
+            });
+          }
+        }
+      } else {
+        // Jika respons bukan success, user belum memiliki tugas akhir
+        if (mounted) {
+          setState(() {
+            _hasThesis = false;
+            _checkingThesisStatus = false;
+          });
+        }
+      }
+    } catch (e) {
+      // Jika terjadi error (termasuk 404), user belum memiliki tugas akhir
+      if (mounted) {
+        setState(() {
+          _hasThesis = false;
+          _checkingThesisStatus = false;
+        });
+      }
+    }
+  }
+
   // Fungsi untuk menambah field anggota
   void _tambahAnggotaField() {
     setState(() {
       _anggotaControllers.add(TextEditingController());
     });
   }
-  
+
   // Fungsi untuk menghapus field anggota
   void _hapusAnggotaField(int index) {
     if (index > 0 && _anggotaControllers.length > 1) {
@@ -52,13 +138,13 @@ class _DaftarTugasAkhirScreenState extends State<DaftarTugasAkhirScreen> {
 
     // Kumpulkan semua NIM dari field-field anggota
     List<String> memberNims = [];
-    
+
     print('Jumlah field anggota: ${_anggotaControllers.length}'); // Debug log
-    
+
     for (int i = 0; i < _anggotaControllers.length; i++) {
       String inputText = _anggotaControllers[i].text.trim();
       print('Field[$i]: "$inputText"'); // Debug log
-      
+
       if (inputText.isNotEmpty) {
         // Cek apakah input cocok dengan nama di daftar
         String? foundNim;
@@ -68,7 +154,7 @@ class _DaftarTugasAkhirScreenState extends State<DaftarTugasAkhirScreen> {
             break;
           }
         }
-        
+
         if (foundNim != null) {
           memberNims.add(foundNim);
           print('Menambahkan NIM: $foundNim'); // Debug log
@@ -83,7 +169,8 @@ class _DaftarTugasAkhirScreenState extends State<DaftarTugasAkhirScreen> {
             if (mounted) {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
-                  content: Text('Anggota "$inputText" tidak ditemukan dalam daftar mahasiswa.'),
+                  content: Text(
+                      'Anggota "$inputText" tidak ditemukan dalam daftar mahasiswa.'),
                   backgroundColor: Colors.red,
                 ),
               );
@@ -107,7 +194,7 @@ class _DaftarTugasAkhirScreenState extends State<DaftarTugasAkhirScreen> {
       }
       return;
     }
-    
+
     // Tampilkan loading
     setState(() {
       _isLoading = true;
@@ -125,9 +212,9 @@ class _DaftarTugasAkhirScreenState extends State<DaftarTugasAkhirScreen> {
 
       if (token == null) {
         // Coba beberapa kemungkinan key token
-        token = prefs.getString('access_token') ?? 
-                prefs.getString('bearer_token') ?? 
-                prefs.getString('auth_token');
+        token = prefs.getString('access_token') ??
+            prefs.getString('bearer_token') ??
+            prefs.getString('auth_token');
       }
 
       if (token == null) {
@@ -135,7 +222,7 @@ class _DaftarTugasAkhirScreenState extends State<DaftarTugasAkhirScreen> {
           setState(() {
             _isLoading = false;
           });
-          
+
           // Tampilkan pesan bahwa user perlu login
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
@@ -189,7 +276,8 @@ class _DaftarTugasAkhirScreenState extends State<DaftarTugasAkhirScreen> {
         if (e is String) {
           errorMessage += e;
         } else if (e.toString().contains('SocketException')) {
-          errorMessage = 'Tidak dapat terhubung ke server. Periksa koneksi internet.';
+          errorMessage =
+              'Tidak dapat terhubung ke server. Periksa koneksi internet.';
         } else if (e.toString().contains('401')) {
           errorMessage = 'Token tidak valid. Silakan login kembali.';
         } else if (e.toString().contains('403')) {
@@ -222,6 +310,64 @@ class _DaftarTugasAkhirScreenState extends State<DaftarTugasAkhirScreen> {
 
   @override
   Widget build(BuildContext context) {
+    if (_checkingThesisStatus) {
+      // Menampilkan loading saat memeriksa status tugas akhir
+      return Scaffold(
+        appBar: AppBar(
+          title: const Text('Tugas Akhir'),
+          backgroundColor: Colors.white,
+          foregroundColor: Colors.black87,
+          elevation: 1,
+        ),
+        body: const Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              CircularProgressIndicator(),
+              SizedBox(height: 16),
+              Text('Memeriksa status tugas akhir...'),
+            ],
+          ),
+        ),
+      );
+    }
+
+    // Jika user sudah memiliki tugas akhir, navigasi ke detail tugas akhir
+    if (_hasThesis) {
+      // Navigasi ke detail tugas akhir
+      if (_token != null && mounted) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (context) => DetailTugasAkhirScreen(token: _token!),
+            ),
+          );
+        });
+      }
+
+      // Tampilkan loading sementara navigasi terjadi
+      return Scaffold(
+        appBar: AppBar(
+          title: const Text('Tugas Akhir'),
+          backgroundColor: Colors.white,
+          foregroundColor: Colors.black87,
+          elevation: 1,
+        ),
+        body: const Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              CircularProgressIndicator(),
+              SizedBox(height: 16),
+              Text('Menuju detail tugas akhir...'),
+            ],
+          ),
+        ),
+      );
+    }
+
+    // Tampilkan form pendaftaran jika user belum memiliki tugas akhir
     return Scaffold(
       body: Stack(
         children: [
@@ -399,10 +545,12 @@ class _DaftarTugasAkhirScreenState extends State<DaftarTugasAkhirScreen> {
                                     decoration: InputDecoration(
                                       hintText: 'Masukkan NIM mahasiswa...',
                                       border: OutlineInputBorder(
-                                        borderRadius: BorderRadius.circular(8.0),
+                                        borderRadius:
+                                            BorderRadius.circular(8.0),
                                       ),
                                       enabledBorder: OutlineInputBorder(
-                                        borderRadius: BorderRadius.circular(8.0),
+                                        borderRadius:
+                                            BorderRadius.circular(8.0),
                                         borderSide: BorderSide(
                                             color: Colors.grey.shade300),
                                       ),
@@ -420,7 +568,10 @@ class _DaftarTugasAkhirScreenState extends State<DaftarTugasAkhirScreen> {
                                   child: Container(
                                     padding: const EdgeInsets.all(10),
                                     decoration: BoxDecoration(
-                                      color: _anggotaControllers[index].text.trim().isNotEmpty
+                                      color: _anggotaControllers[index]
+                                              .text
+                                              .trim()
+                                              .isNotEmpty
                                           ? Colors.blue
                                           : Colors.grey,
                                       borderRadius: BorderRadius.circular(8),
@@ -441,7 +592,8 @@ class _DaftarTugasAkhirScreenState extends State<DaftarTugasAkhirScreen> {
                                           padding: const EdgeInsets.all(10),
                                           decoration: BoxDecoration(
                                             color: Colors.red,
-                                            borderRadius: BorderRadius.circular(8),
+                                            borderRadius:
+                                                BorderRadius.circular(8),
                                           ),
                                           child: const Icon(
                                             Icons.remove,
@@ -453,7 +605,8 @@ class _DaftarTugasAkhirScreenState extends State<DaftarTugasAkhirScreen> {
                                         padding: const EdgeInsets.all(10),
                                         decoration: BoxDecoration(
                                           color: Colors.grey,
-                                          borderRadius: BorderRadius.circular(8),
+                                          borderRadius:
+                                              BorderRadius.circular(8),
                                         ),
                                         child: const Icon(
                                           Icons.remove,
@@ -469,27 +622,28 @@ class _DaftarTugasAkhirScreenState extends State<DaftarTugasAkhirScreen> {
                       const SizedBox(height: 30),
 
                       Center(
-                        child: _isLoading 
-                          ? const CircularProgressIndicator()
-                          : ElevatedButton(
-                              onPressed: _isLoading ? null : _submitTugasAkhir,
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.blue,
-                                foregroundColor: Colors.white,
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 40, vertical: 12),
-                                shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(8)),
-                                minimumSize: const Size(200, 48),
-                              ),
-                              child: const Text(
-                                'Ajukan Tugas Akhir',
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
+                        child: _isLoading
+                            ? const CircularProgressIndicator()
+                            : ElevatedButton(
+                                onPressed:
+                                    _isLoading ? null : _submitTugasAkhir,
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.blue,
+                                  foregroundColor: Colors.white,
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 40, vertical: 12),
+                                  shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(8)),
+                                  minimumSize: const Size(200, 48),
+                                ),
+                                child: const Text(
+                                  'Ajukan Tugas Akhir',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                  ),
                                 ),
                               ),
-                            ),
                       ),
                     ],
                   ),
