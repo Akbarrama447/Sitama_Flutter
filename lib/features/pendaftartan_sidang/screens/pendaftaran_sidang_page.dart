@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import '../constants/sidang_colors.dart';
 import 'revisi_page.dart';
-import '../services/sidang_registration_service.dart';
+import '../models/jadwal_sidang_model.dart';
+import '../models/status_pendaftaran_model.dart';
+import '../services/jadwal_sidang_service.dart';
 import '../services/document_list_service.dart';
 import '../models/document_model.dart';
 
@@ -14,22 +16,54 @@ class PendaftaranSidangPage extends StatefulWidget {
 
 class _PendaftaranSidangPageState extends State<PendaftaranSidangPage> {
   final TextEditingController _judulController = TextEditingController();
-  String? _selectedJadwal;
-  final List<String> _listJadwal = [
-    '01-12-2025, Senin 13.00-15.00',
-    '02-12-2025, Selasa 09.00-11.00',
-    '03-12-2025, Rabu 15.00-17.00',
-  ];
 
   // Logic Status Revisi (True = Butuh Revisi/Biru, False = Lulus/Abu)
   bool isRevisiNeeded = true;
   bool _allDocumentsVerified = false;
   bool _isLoading = true;
+  List<JadwalSidang> _jadwalList = [];
+  JadwalSidang? _selectedJadwal;
+  bool _isSubmitting = false;
+  StatusPendaftaranResponse? _statusPendaftaran;
+  bool _isCheckingStatus = true;
 
   @override
   void initState() {
     super.initState();
-    _checkAllDocumentsVerified();
+    _checkStatusPendaftaran();
+  }
+
+  Future<void> _checkStatusPendaftaran() async {
+    setState(() {
+      _isCheckingStatus = true;
+    });
+
+    try {
+      // Cek status pendaftaran terlebih dahulu
+      StatusPendaftaranResponse? statusResponse = await JadwalSidangService.getStatusPendaftaran();
+
+      if (statusResponse != null && statusResponse.status == 'success') {
+        setState(() {
+          _statusPendaftaran = statusResponse;
+        });
+
+        // Jika mahasiswa belum mendaftar, cek dokumen untuk menentukan apakah bisa mendaftar
+        if (statusResponse.data == null) {
+          // Mahasiswa belum daftar, lanjutkan dengan cek dokumen
+          await _checkAllDocumentsVerified();
+        }
+      } else {
+        // Jika gagal mendapatkan status, tetap coba cek dokumen sebagai fallback
+        await _checkAllDocumentsVerified();
+      }
+    } catch (e) {
+      print('Error saat mengecek status pendaftaran: $e');
+      await _checkAllDocumentsVerified(); // fallback ke cek dokumen
+    } finally {
+      setState(() {
+        _isCheckingStatus = false;
+      });
+    }
   }
 
   Future<void> _checkAllDocumentsVerified() async {
@@ -62,12 +96,17 @@ class _PendaftaranSidangPageState extends State<PendaftaranSidangPage> {
         }
       }
 
+      if (allVerified && _statusPendaftaran?.data == null) {
+        // Jika semua dokumen terverifikasi dan belum mendaftar, ambil jadwal sidang yang tersedia
+        await _loadJadwalTersedia();
+      }
+
       setState(() {
         _allDocumentsVerified = allVerified;
         _isLoading = false;
       });
 
-      if (!allVerified) {
+      if (!allVerified && _statusPendaftaran?.data == null) {
         // Tampilkan pesan bahwa semua dokumen harus terverifikasi
         WidgetsBinding.instance.addPostFrameCallback((_) {
           _showErrorDialog(
@@ -83,6 +122,22 @@ class _PendaftaranSidangPageState extends State<PendaftaranSidangPage> {
     }
   }
 
+  Future<void> _loadJadwalTersedia() async {
+    try {
+      List<JadwalSidang>? jadwalTersedia = await JadwalSidangService.getJadwalTersedia();
+
+      if (jadwalTersedia != null) {
+        setState(() {
+          _jadwalList = jadwalTersedia;
+        });
+      } else {
+        print('Gagal memuat jadwal sidang');
+      }
+    } catch (e) {
+      print('Error saat memuat jadwal sidang: $e');
+    }
+  }
+
   // --- DIALOG LOGIC ---
   void _showKonfirmasiDialog() {
     // Validasi apakah semua dokumen terverifikasi sebelum izinkan pendaftaran
@@ -92,8 +147,13 @@ class _PendaftaranSidangPageState extends State<PendaftaranSidangPage> {
     }
 
     // Validasi apakah judul dan jadwal sudah diisi
-    if (_judulController.text.isEmpty || _selectedJadwal == null) {
-      _showErrorDialog('Silakan lengkapi judul tugas akhir dan pilih jadwal sidang terlebih dahulu.');
+    if (_judulController.text.trim().isEmpty) {
+      _showErrorDialog('Silakan lengkapi judul tugas akhir.');
+      return;
+    }
+
+    if (_selectedJadwal == null) {
+      _showErrorDialog('Silakan pilih jadwal sidang terlebih dahulu.');
       return;
     }
 
@@ -146,7 +206,7 @@ class _PendaftaranSidangPageState extends State<PendaftaranSidangPage> {
                   child: ElevatedButton(
                     onPressed: () {
                       Navigator.pop(context);
-                      _showInfoDialog();
+                      _prosesPendaftaran(context);
                     },
                     style: ElevatedButton.styleFrom(
                         backgroundColor: SidangColors.buttonBlue,
@@ -185,118 +245,34 @@ class _PendaftaranSidangPageState extends State<PendaftaranSidangPage> {
     );
   }
 
-  void _showInfoDialog() {
-    showDialog(
-      context: context,
-      barrierDismissible: false, // Disable dismiss to prevent accidental closure during upload
-      builder: (BuildContext context) {
-        return Dialog(
-          insetPadding: const EdgeInsets.all(15),
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(10),
-            child: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(20),
-                    color: SidangColors.buttonBlue,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: const [
-                        Text("FARHAN DWI CAHYANTO",
-                            style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold)),
-                        SizedBox(height: 5),
-                        Text("3.34.24.2.11 - D3 Teknik Informatika",
-                            style:
-                                TextStyle(color: Colors.white, fontSize: 14)),
-                      ],
-                    ),
-                  ),
-                  Container(
-                    padding: const EdgeInsets.all(20),
-                    color: Colors.white,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _buildInfoRow(
-                            "Judul Tugas Akhir", _judulController.text),
-                        _buildInfoRow("Deskripsi", "Alat sensor pendeteksi"),
-                        _buildInfoRow(
-                            "Dosen Pembimbing", "1. Pak Suko\n2. Pak Amran"),
-                        _buildInfoRow(
-                            "Dosen Penguji", "1. Pak Suko\n2. Pak Amran"),
-                        _buildInfoRow("Sekretaris", "Wiktasari"),
-                        const SizedBox(height: 10),
-                        Row(children: [
-                          _buildBadge(_selectedJadwal ?? "Belum dipilih"),
-                          const SizedBox(width: 10),
-                          _buildBadge("08:00 WIB")
-                        ]),
-                        const SizedBox(height: 20),
-                        const Divider(thickness: 1, color: Color(0xFFEEEEEE)),
-                        const SizedBox(height: 20),
-                        Center(
-                          child: SizedBox(
-                            width: 150,
-                            height: 40,
-                            child: ElevatedButton(
-                              onPressed: () {
-                                // Proses pendaftaran sidang
-                                _prosesPendaftaran(context);
-                              },
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: SidangColors.buttonBlue,
-                                shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(5)),
-                              ),
-                              child: const Text("Daftar Sidang",
-                                  style: TextStyle(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.bold)),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        );
-      },
-    );
-  }
 
   // Fungsi untuk proses pendaftaran sidang
   void _prosesPendaftaran(BuildContext context) async {
-    // Tutup dialog info
-    Navigator.pop(context);
+    setState(() {
+      _isSubmitting = true;
+    });
 
     try {
       // Panggil API untuk mendaftarkan sidang
-      Map<String, dynamic>? result = await SidangRegistrationService.registerSidang(
-        judulTa: _judulController.text,
-        jadwalSidang: _selectedJadwal!,
+      PendaftaranResponse? result = await JadwalSidangService.daftarSidang(
+        judul: _judulController.text.trim(),
+        jadwalSidangId: _selectedJadwal!.id,
       );
 
-      if (result != null && result['success'] == true) {
+      if (result != null && result.status == 'success') {
         // Tampilkan pesan sukses
         _showSuccessDialog();
       } else {
-        String errorMessage = result?['message'] ?? 'Gagal mendaftarkan sidang';
+        String errorMessage = result?.message ?? 'Gagal mendaftarkan sidang';
         _showErrorDialog('Pendaftaran gagal: $errorMessage');
       }
     } catch (e) {
       // Tampilkan pesan error
       _showErrorDialog('Gagal memproses pendaftaran: ${e.toString()}');
+    } finally {
+      setState(() {
+        _isSubmitting = false;
+      });
     }
   }
 
@@ -353,6 +329,27 @@ class _PendaftaranSidangPageState extends State<PendaftaranSidangPage> {
 
   @override
   Widget build(BuildContext context) {
+    if (_isCheckingStatus) {
+      return Scaffold(
+        backgroundColor: Colors.white,
+        body: const Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              CircularProgressIndicator(),
+              SizedBox(height: 20),
+              Text('Memeriksa status pendaftaran...'),
+            ],
+          ),
+        ),
+      );
+    }
+
+    // Jika mahasiswa sudah mendaftar, tampilkan detail pendaftaran
+    if (_statusPendaftaran?.data != null) {
+      return _buildPendaftaranDetail();
+    }
+
     if (_isLoading) {
       return Scaffold(
         backgroundColor: Colors.white,
@@ -440,13 +437,20 @@ class _PendaftaranSidangPageState extends State<PendaftaranSidangPage> {
             Container(
               color: Colors.white,
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
-              child: const Align(
-                  alignment: Alignment.centerRight,
-                  child: Text('Suko Tyas',
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text('Suko Tyas',
                       style: TextStyle(
                           color: SidangColors.headerTextBlue,
                           fontWeight: FontWeight.bold,
-                          fontSize: 14))),
+                          fontSize: 14)),
+                  IconButton(
+                    icon: const Icon(Icons.refresh),
+                    onPressed: _checkStatusPendaftaran,
+                  ),
+                ],
+              ),
             ),
             const Divider(height: 1, thickness: 1, color: Color(0xFFEEEEEE)),
             Expanded(
@@ -534,18 +538,29 @@ class _PendaftaranSidangPageState extends State<PendaftaranSidangPage> {
                                     width: 150,
                                     height: 40,
                                     child: ElevatedButton(
-                                      onPressed: _showKonfirmasiDialog,
+                                      onPressed: _isSubmitting ? null : _showKonfirmasiDialog,
                                       style: ElevatedButton.styleFrom(
-                                          backgroundColor: SidangColors.buttonBlue,
+                                          backgroundColor: _isSubmitting
+                                              ? Colors.grey
+                                              : SidangColors.buttonBlue,
                                           foregroundColor: Colors.white,
                                           elevation: 0,
                                           shape: RoundedRectangleBorder(
                                               borderRadius:
                                                   BorderRadius.circular(6))),
-                                      child: const Text('Daftar Sidang',
-                                          style: TextStyle(
-                                              fontWeight: FontWeight.w600,
-                                              fontSize: 13)),
+                                      child: _isSubmitting
+                                          ? const SizedBox(
+                                              width: 20,
+                                              height: 20,
+                                              child: CircularProgressIndicator(
+                                                strokeWidth: 2,
+                                                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                              ),
+                                            )
+                                          : const Text('Daftar Sidang',
+                                              style: TextStyle(
+                                                  fontWeight: FontWeight.w600,
+                                                  fontSize: 13)),
                                     ),
                                   ),
                                 ),
@@ -561,6 +576,169 @@ class _PendaftaranSidangPageState extends State<PendaftaranSidangPage> {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildPendaftaranDetail() {
+    final pendaftaran = _statusPendaftaran!.data!;
+    final jadwal = pendaftaran.pendaftaranSidang.jadwalSidang;
+
+    return Scaffold(
+      backgroundColor: Colors.white,
+      body: SafeArea(
+        child: Column(
+          children: [
+            Container(
+              color: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text('Suko Tyas',
+                      style: TextStyle(
+                          color: SidangColors.headerTextBlue,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14)),
+                  IconButton(
+                    icon: const Icon(Icons.refresh),
+                    onPressed: _checkStatusPendaftaran,
+                  ),
+                ],
+              ),
+            ),
+            const Divider(height: 1, thickness: 1, color: Color(0xFFEEEEEE)),
+            Expanded(
+              child: Stack(
+                children: [
+                  Positioned(
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    height: 250,
+                    child: Container(
+                      decoration: const BoxDecoration(
+                        gradient: LinearGradient(
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                            colors: [Color(0xFFE3F2FD), Colors.white]),
+                      ),
+                    ),
+                  ),
+                  SingleChildScrollView(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 16.0, vertical: 20.0),
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(8),
+                          boxShadow: [
+                            BoxShadow(
+                                color: Colors.black.withOpacity(0.1),
+                                spreadRadius: 1,
+                                blurRadius: 5,
+                                offset: const Offset(0, 2))
+                          ],
+                        ),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(8),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Container(
+                                  width: double.infinity,
+                                  height: 4,
+                                  color: SidangColors.cardTopBorderBlue),
+                              const Padding(
+                                  padding: EdgeInsets.fromLTRB(20, 20, 20, 15),
+                                  child: Text('Detail Pendaftaran Sidang',
+                                      style: TextStyle(
+                                          fontSize: 18,
+                                          fontWeight: FontWeight.bold,
+                                          color: Color(0xFF37474F)))),
+                              const Divider(
+                                  height: 1, thickness: 1, color: Color(0xFFEEEEEE)),
+                              Padding(
+                                padding: const EdgeInsets.all(20.0),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    _buildDetailInfoRow('Judul Tugas Akhir', pendaftaran.tugasAkhir.judul),
+                                    _buildDetailInfoRow('Status Tugas Akhir', pendaftaran.tugasAkhir.status),
+                                    _buildDetailInfoRow('Tanggal Sidang', jadwal.tanggal),
+                                    _buildDetailInfoRow('Waktu Sidang', '${jadwal.sesi.jamMulai} - ${jadwal.sesi.jamSelesai}'),
+                                    _buildDetailInfoRow('Ruangan', jadwal.ruangan.namaRuangan),
+                                    _buildDetailInfoRow('Tanggal Daftar', _formatTanggal(pendaftaran.pendaftaranSidang.tanggalDaftar)),
+                                    _buildDetailInfoRow('Status Pendaftaran', pendaftaran.pendaftaranSidang.status),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(height: 10),
+                              const Divider(
+                                  height: 1, thickness: 1, color: Color(0xFFEEEEEE)),
+                              Padding(
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 25.0),
+                                child: Center(
+                                  child: Text(
+                                    'Anda sudah terdaftar pada jadwal sidang ini',
+                                    style: TextStyle(
+                                      color: Colors.grey[600],
+                                      fontSize: 14,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  String _formatTanggal(String tanggal) {
+    // Format tanggal dari "2025-01-10T10:30:00Z" menjadi "10 Januari 2025, 10:30"
+    try {
+      DateTime dateTime = DateTime.parse(tanggal);
+      String bulan = _getNamaBulan(dateTime.month);
+      return '${dateTime.day} $bulan ${dateTime.year}, ${dateTime.hour.toString().padLeft(2, '0')}:${dateTime.minute.toString().padLeft(2, '0')}';
+    } catch (e) {
+      return tanggal; // Jika gagal format, kembalikan tanggal asli
+    }
+  }
+
+  String _getNamaBulan(int bulan) {
+    const List<String> namaBulan = [
+      '', 'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+      'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
+    ];
+    return namaBulan[bulan];
+  }
+
+  Widget _buildDetailInfoRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(label,
+              style: const TextStyle(
+                  color: Color(0xFF455A64),
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600)),
+          const SizedBox(height: 2),
+          Text(value,
+              style: const TextStyle(color: Color(0xFF263238), fontSize: 14)),
+        ],
       ),
     );
   }
@@ -591,12 +769,13 @@ class _PendaftaranSidangPageState extends State<PendaftaranSidangPage> {
     return Container(
       height: 45,
       decoration: BoxDecoration(
-          color: Colors.white,
+          color: _statusPendaftaran?.data != null ? Colors.grey[100] : Colors.white,
           borderRadius: BorderRadius.circular(4),
           border: Border.all(color: SidangColors.borderColor)),
       child: TextField(
         controller: controller,
-        style: const TextStyle(fontSize: 13, color: Colors.black87),
+        enabled: _statusPendaftaran?.data == null,
+        style: TextStyle(fontSize: 13, color: _statusPendaftaran?.data != null ? Colors.grey : Colors.black87),
         decoration: InputDecoration(
             hintText: hintText,
             hintStyle: const TextStyle(color: Colors.grey, fontSize: 13),
@@ -608,6 +787,22 @@ class _PendaftaranSidangPageState extends State<PendaftaranSidangPage> {
   }
 
   Widget _buildDropdown() {
+    if (_jadwalList.isEmpty) {
+      return Container(
+        height: 45,
+        padding: const EdgeInsets.symmetric(horizontal: 15),
+        decoration: BoxDecoration(
+            color: Colors.grey[100],
+            borderRadius: BorderRadius.circular(4),
+            border: Border.all(color: SidangColors.borderColor)),
+        child: const Align(
+          alignment: Alignment.centerLeft,
+          child: Text("Tidak ada jadwal tersedia",
+              style: TextStyle(color: Colors.grey, fontSize: 13)),
+        ),
+      );
+    }
+
     return Container(
       height: 45,
       padding: const EdgeInsets.symmetric(horizontal: 15),
@@ -616,16 +811,28 @@ class _PendaftaranSidangPageState extends State<PendaftaranSidangPage> {
           borderRadius: BorderRadius.circular(4),
           border: Border.all(color: SidangColors.borderColor)),
       child: DropdownButtonHideUnderline(
-        child: DropdownButton<String>(
+        child: DropdownButton<JadwalSidang>(
           value: _selectedJadwal,
-          hint: const Text("",
+          hint: const Text("Pilih jadwal sidang",
               style: TextStyle(color: Colors.grey, fontSize: 13)),
-          icon: const SizedBox.shrink(),
+          icon: const Icon(Icons.arrow_drop_down),
           isExpanded: true,
           style: const TextStyle(fontSize: 13, color: Colors.black87),
-          onChanged: (val) => setState(() => _selectedJadwal = val),
-          items: _listJadwal
-              .map((val) => DropdownMenuItem(value: val, child: Text(val)))
+          onChanged: _isSubmitting || _statusPendaftaran?.data != null
+              ? null
+              : (JadwalSidang? value) {
+                  setState(() {
+                    _selectedJadwal = value;
+                  });
+                },
+          items: _jadwalList
+              .map((jadwal) => DropdownMenuItem(
+                    value: jadwal,
+                    child: Text(
+                      '${jadwal.tanggal} ${jadwal.sesi.jamMulai}-${jadwal.sesi.jamSelesai} (${jadwal.ruangan.namaRuangan})',
+                      style: const TextStyle(fontSize: 13),
+                    ),
+                  ))
               .toList(),
         ),
       ),

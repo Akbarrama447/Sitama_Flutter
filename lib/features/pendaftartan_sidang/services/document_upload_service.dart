@@ -7,7 +7,7 @@ import '../../../main.dart'; // untuk mengakses storageService
 import '../../../core/services/api_service.dart';
 
 class DocumentUploadService {
-  static const String baseUrl = 'http://172.20.10.6:8000'; // Sesuaikan dengan API kamu
+  static const String baseUrl = 'http://localhost:8000'; // Sesuaikan dengan API kamu
 
   // Tambahkan flag untuk menentukan apakah menggunakan API atau tidak
   static bool useApi = false; // Set ke false untuk menggunakan mode lokal sementara

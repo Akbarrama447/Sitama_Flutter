@@ -24,7 +24,7 @@ class _EditLogScreenState extends State<EditLogScreen> {
   PlatformFile? _pickedPlatformFile;
   late String _fileName; // nama file backend (tidak null)
   bool _isLoading = false;
-  final String _baseUrl = 'http://172.20.10.6:8000';
+  final String _baseUrl = 'http://localhost:8000';
 
   @override
   void initState() {
