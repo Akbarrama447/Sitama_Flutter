@@ -18,7 +18,7 @@ class TugasAkhirTab extends StatefulWidget {
 }
 
 class _TugasAkhirTabState extends State<TugasAkhirTab> {
-  final String _baseUrl = 'http://192.168.1.8:8000';
+  final String _baseUrl = 'http://172.20.10.6:8000';
   final int _targetBimbingan = 8;
 
   late Future<void> _initFuture;
@@ -156,11 +156,23 @@ class _TugasAkhirTabState extends State<TugasAkhirTab> {
     if (key == 'approve') {
       return {'icon': Icons.check_circle, 'color': Colors.green};
     } else if (key == 'ditolak') {
-      return {'icon': Icons.cancel, 'color': Colors.red};
+      return {'icon': Icons.warning, 'color': Colors.red};
     } else {
       return {'icon': Icons.edit, 'color': Colors.orange};
     }
   }
+
+    Color _statusBackgroundColor(String key) {
+    switch (key) {
+      case 'approve':
+        return Colors.green.withOpacity(0.08);
+      case 'ditolak':
+        return Colors.red.withOpacity(0.08);
+      default:
+        return Colors.orange.withOpacity(0.10);
+    }
+  }
+
 
   void _onStatusTap(Map<String, dynamic> log) async {
     final statusKey = _mapStatus(log['status']);
@@ -397,35 +409,100 @@ class _TugasAkhirTabState extends State<TugasAkhirTab> {
     final iconAndColor = _statusIconAndColor(statusKey);
     final icon = iconAndColor['icon'] as IconData;
     final color = iconAndColor['color'] as Color;
+    final bgColor = _statusBackgroundColor(statusKey);
+    final statusLabel = _labelStatus(statusKey);
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 10),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12), border: Border.all(color: Colors.grey.shade200)),
-      child: Row(crossAxisAlignment: CrossAxisAlignment.center, children: [
-        SizedBox(
-          width: 90,
-          child: Text(formattedDate.replaceFirst(', ', '\n'), style: const TextStyle(fontSize: 13, height: 1.4, fontWeight: FontWeight.w500), textAlign: TextAlign.left),
+    return InkWell(
+      onTap: () => _onStatusTap(log), // 🔑 KLIK DI MANA SAJA
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 10),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        decoration: BoxDecoration(
+          color: bgColor,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.grey.shade200),
         ),
-        Container(width: 1, height: 40, color: Colors.grey.shade300, margin: const EdgeInsets.symmetric(horizontal: 12)),
-        Expanded(
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisAlignment: MainAxisAlignment.center, children: [
-            Text(namaPembimbing, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Color(0xFF2C3E50)), maxLines: 1, overflow: TextOverflow.ellipsis),
-            const SizedBox(height: 4),
-            Text(log['judul']?.toString() ?? '-', style: TextStyle(fontSize: 13, color: Colors.grey[600]), maxLines: 2, overflow: TextOverflow.ellipsis),
-          ]),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            SizedBox(
+              width: 80,
+              child: Text(
+                formattedDate.replaceFirst(', ', '\n'),
+                style: const TextStyle(
+                  fontSize: 13,
+                  height: 1.4,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+            Container(
+              width: 1,
+              height: 40,
+              color: Colors.grey.shade300,
+              margin: const EdgeInsets.symmetric(horizontal: 12),
+            ),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    namaPembimbing,
+                    style: const TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF2C3E50),
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    log['judul']?.toString() ?? '-',
+                    style: TextStyle(fontSize: 13, color: Colors.grey[600]),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 6),
+
+            // 🔵 InkWell ICON (boleh tetap ada)
+            Padding(
+              padding: const EdgeInsets.only(left: 10),
+              child: InkWell(
+                onTap: () => _onStatusTap(log),
+                borderRadius: BorderRadius.circular(8),
+                child: SizedBox(
+                  width: 50,
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(icon, size: 18, color: color),
+                      const SizedBox(height: 2),
+                      Text(
+                        statusLabel,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w600,
+                          color: color,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ],
         ),
-        const SizedBox(width: 10),
-        InkWell(
-          onTap: () => _onStatusTap(log),
-          borderRadius: BorderRadius.circular(8),
-          child: Container(
-            padding: const EdgeInsets.all(6),
-            child: Column(children: [Icon(icon, size: 20, color: color)]),
-          ),
-        ),
-      ]),
+      ),
     );
+
   }
 
     Widget _buildEmptyState() {

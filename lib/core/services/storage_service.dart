@@ -1,13 +1,9 @@
 import 'package:shared_preferences/shared_preferences.dart';
 
+// Service ini adalah "brankas" simpel untuk simpan dan baca token dan nama
 class StorageService {
   final SharedPreferences _prefs;
-
-  StorageService(this._prefs);
-
-  // keys
   static const String _tokenKey = 'auth_token';
-
   static const String _nameKey = 'user_name';
   static const String _nimKey = 'user_nim';
   static const String _prodiKey = 'user_prodi';
@@ -15,11 +11,16 @@ class StorageService {
   static const String _emailKey = 'user_email';
   static const String _tahunMasukKey = 'user_tahun_masuk';
 
-  // TOKEN
-  Future<void> saveToken(String token) async =>
-      await _prefs.setString(_tokenKey, token);
+  StorageService(this._prefs);
+
+  // Token
+  Future<void> saveToken(String token) async => await _prefs.setString(_tokenKey, token);
   Future<String?> getToken() async => _prefs.getString(_tokenKey);
   Future<void> deleteToken() async => await _prefs.remove(_tokenKey);
+
+  // Nama user
+  Future<void> saveUserName(String name) async => await _prefs.setString(_nameKey, name);
+  Future<String?> getUserName() async => _prefs.getString(_nameKey);
 
   // PROFIL
   Future<void> saveProfile(Map<String, dynamic> data) async {
@@ -43,6 +44,6 @@ class StorageService {
     };
   }
 
-  // CLEAR
+  // Clear all (logout)
   Future<void> clearAll() async => await _prefs.clear();
 }

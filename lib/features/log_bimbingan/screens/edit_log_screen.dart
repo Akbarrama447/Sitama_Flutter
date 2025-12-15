@@ -24,7 +24,7 @@ class _EditLogScreenState extends State<EditLogScreen> {
   PlatformFile? _pickedPlatformFile;
   late String _fileName; // nama file backend (tidak null)
   bool _isLoading = false;
-  final String _baseUrl = 'http://192.168.1.8:8000';
+  final String _baseUrl = 'http://172.20.10.6:8000';
 
   @override
   void initState() {
@@ -123,6 +123,78 @@ class _EditLogScreenState extends State<EditLogScreen> {
     }
   }
 
+  Future<void> _deleteLog() async {
+  setState(() => _isLoading = true);
+
+  try {
+    final token = await storageService.getToken();
+    if (token == null) {
+      _forceLogout();
+      return;
+    }
+
+    final id = widget.log['id'] ?? widget.log['log_id'] ?? widget.log['kode'];
+    if (id == null) throw Exception('ID log tidak tersedia');
+
+    final res = await http.delete(
+      Uri.parse('$_baseUrl/api/log-bimbingan/$id'),
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Accept': 'application/json',
+      },
+    );
+
+    if (res.statusCode == 200 || res.statusCode == 204) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Log bimbingan berhasil dihapus')),
+      );
+      Navigator.pop(context, true); // ⬅️ balik + refresh list
+    } else if (res.statusCode == 401) {
+      _forceLogout();
+    } else {
+      throw Exception('Gagal menghapus log');
+    }
+  } catch (e) {
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error: $e')),
+      );
+    }
+  } finally {
+    if (mounted) setState(() => _isLoading = false);
+  }
+}
+
+  
+  void _confirmDelete() {
+  showDialog(
+    context: context,
+    builder: (context) => AlertDialog(
+      title: const Text('Hapus Log Bimbingan'),
+      content: const Text(
+        'Apakah kamu yakin ingin menghapus log bimbingan ini?\n\n'
+        'Tindakan ini tidak dapat dibatalkan.',
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Batal'),
+        ),
+        TextButton(
+          onPressed: () {
+            Navigator.pop(context);
+            _deleteLog();
+          },
+          style: TextButton.styleFrom(foregroundColor: Colors.red),
+          child: const Text('Hapus'),
+        ),
+      ],
+    ),
+  );
+}
+
+
   void _forceLogout() {
     storageService.deleteToken();
     Navigator.pushAndRemoveUntil(
@@ -217,6 +289,23 @@ class _EditLogScreenState extends State<EditLogScreen> {
                       : const Text('Simpan Perubahan'),
                 ),
               ),
+
+              const SizedBox(height: 12),
+
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: _isLoading ? null : _confirmDelete,
+                  icon: const Icon(Icons.delete_outline),
+                  label: const Text('Hapus Log Bimbingan'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: Colors.red,
+                    side: const BorderSide(color: Colors.red),
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                  ),
+                ),
+              ),
+
             ],
           ),
         ),

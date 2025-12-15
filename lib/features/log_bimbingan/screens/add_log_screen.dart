@@ -29,12 +29,13 @@ class _AddLogScreenState extends State<AddLogScreen> {
   PlatformFile? _pickedPlatformFile;
   bool _isLoading = false;
 
-  // samakan base url
-  final String _baseUrl = 'http://192.168.1.8:8000';
+  // Base URL backend
+  final String _baseUrl = 'http://172.20.10.6:8000';
 
   @override
   void initState() {
     super.initState();
+    // Auto-fill nama pembimbing
     _pembimbingController.text = widget.pembimbingNama;
   }
 
@@ -64,12 +65,16 @@ class _AddLogScreenState extends State<AddLogScreen> {
     if (!_formKey.currentState!.validate()) return;
 
     if (_selectedDate == null) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Pilih jadwal bimbingan')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Pilih jadwal bimbingan')),
+      );
       return;
     }
 
     if (_pickedPlatformFile == null) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('File wajib diupload')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('File wajib diupload')),
+      );
       return;
     }
 
@@ -85,18 +90,21 @@ class _AddLogScreenState extends State<AddLogScreen> {
       final url = Uri.parse('$_baseUrl/api/log-bimbingan');
       var request = http.MultipartRequest('POST', url);
 
+      // --- Fields ---
       request.fields['judul'] = _judulController.text.trim();
       request.fields['deskripsi'] = _deskripsiController.text.trim();
-      // kirim urutan (preferensi backend), tapi juga kirim nama sebagai fallback
       request.fields['pembimbing_urutan'] = widget.pembimbingUrutan.toString();
       request.fields['pembimbing'] = _pembimbingController.text.trim();
       request.fields['tanggal'] = DateFormat('yyyy-MM-dd').format(_selectedDate!);
 
-      request.files.add(http.MultipartFile.fromBytes(
-        'file_path',
-        _pickedPlatformFile!.bytes!,
-        filename: _pickedPlatformFile!.name,
-      ));
+      // --- File upload ---
+      request.files.add(
+        http.MultipartFile.fromBytes(
+          'file_path',
+          _pickedPlatformFile!.bytes!,
+          filename: _pickedPlatformFile!.name,
+        ),
+      );
 
       request.headers['Authorization'] = 'Bearer $token';
       request.headers['Accept'] = 'application/json';
@@ -104,7 +112,9 @@ class _AddLogScreenState extends State<AddLogScreen> {
       final response = await request.send();
 
       if (response.statusCode == 200 || response.statusCode == 201) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Log bimbingan berhasil ditambahkan')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Log bimbingan berhasil ditambahkan')),
+        );
         Navigator.pop(context, true);
       } else if (response.statusCode == 401) {
         _forceLogout();
@@ -122,7 +132,11 @@ class _AddLogScreenState extends State<AddLogScreen> {
 
   void _forceLogout() {
     storageService.deleteToken();
-    Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (_) => const LoginScreen()), (route) => false);
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(builder: (_) => const LoginScreen()),
+      (route) => false,
+    );
   }
 
   @override
@@ -139,6 +153,7 @@ class _AddLogScreenState extends State<AddLogScreen> {
           key: _formKey,
           child: ListView(
             children: [
+              // Judul
               TextFormField(
                 controller: _judulController,
                 decoration: const InputDecoration(labelText: 'Judul Bimbingan', border: OutlineInputBorder()),
@@ -146,7 +161,7 @@ class _AddLogScreenState extends State<AddLogScreen> {
               ),
               const SizedBox(height: 16),
 
-              // pembimbing otomatis (readOnly)
+              // Pembimbing (read-only)
               TextFormField(
                 controller: _pembimbingController,
                 readOnly: true,
@@ -155,6 +170,7 @@ class _AddLogScreenState extends State<AddLogScreen> {
               ),
               const SizedBox(height: 16),
 
+              // Deskripsi
               TextFormField(
                 controller: _deskripsiController,
                 decoration: const InputDecoration(labelText: 'Deskripsi', border: OutlineInputBorder()),
@@ -163,29 +179,46 @@ class _AddLogScreenState extends State<AddLogScreen> {
               ),
               const SizedBox(height: 16),
 
+              // Jadwal
               InkWell(
                 onTap: () => _selectDate(context),
                 child: InputDecorator(
                   decoration: const InputDecoration(labelText: 'Jadwal Bimbingan', border: OutlineInputBorder()),
-                  child: Text(_selectedDate == null ? 'Pilih tanggal' : DateFormat('EEEE, d MMMM yyyy', 'id_ID').format(_selectedDate!)),
+                  child: Text(
+                    _selectedDate == null
+                        ? 'Pilih tanggal'
+                        : DateFormat('EEEE, d MMMM yyyy', 'id_ID').format(_selectedDate!),
+                  ),
                 ),
               ),
               const SizedBox(height: 16),
 
+              // Upload file
               ElevatedButton.icon(
                 onPressed: _pickFile,
                 icon: const Icon(Icons.upload_file),
-                label: Text(_pickedPlatformFile == null ? 'Upload File' : 'File dipilih: ${_pickedPlatformFile!.name}'),
-                style: ElevatedButton.styleFrom(backgroundColor: Colors.grey[200], foregroundColor: Colors.black),
+                label: Text(
+                  _pickedPlatformFile == null ? "Upload File" : _pickedPlatformFile!.name, overflow: TextOverflow.ellipsis,
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.grey[200],
+                  foregroundColor: Colors.black,
+                ),
               ),
               const SizedBox(height: 24),
 
+              // Submit
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
                   onPressed: _isLoading ? null : _submitLog,
-                  style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF03A9F4), padding: const EdgeInsets.symmetric(vertical: 16)),
-                  child: _isLoading ? const CircularProgressIndicator(color: Colors.white) : const Text('Simpan'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF03A9F4),
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                  ),
+                  child: _isLoading
+                      ? const CircularProgressIndicator(color: Colors.white)
+                      : const Text('Simpan'),
                 ),
               ),
             ],

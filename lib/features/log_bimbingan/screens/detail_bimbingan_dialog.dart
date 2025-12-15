@@ -25,52 +25,90 @@ class _DetailBimbinganDialogState extends State<DetailBimbinganDialog> {
 
   Future<Map<String, dynamic>> _fetchProfile() async {
     final token = await storageService.getToken();
-    if (token == null) throw Exception('Token tidak ditemukan, silakan login ulang.');
+    if (token == null) throw Exception('Token tidak ditemukan.');
 
-    final url = Uri.parse(ApiService.profileUrl);
-    final response = await http.get(
-      url,
+    final res = await http.get(
+      Uri.parse(ApiService.profileUrl),
       headers: {
         'Accept': 'application/json',
         'Authorization': 'Bearer $token',
       },
-    ).timeout(const Duration(seconds: 10));
+    );
 
-    if (response.statusCode == 200) {
-      final body = jsonDecode(response.body);
+    if (res.statusCode == 200) {
+      final body = jsonDecode(res.body);
       return Map<String, dynamic>.from(body['data']);
-    } else if (response.statusCode == 401) {
-      throw Exception('Token expired. Silakan login ulang.');
     } else {
-      throw Exception('Gagal memuat profil. Status: ${response.statusCode}');
+      throw Exception('Gagal memuat profil');
     }
   }
 
   String _formatTanggal(dynamic raw) {
-    if (raw == null) return '-';
     try {
       final d = DateTime.parse(raw.toString());
       return DateFormat('EEEE, d MMMM yyyy', 'id_ID').format(d);
     } catch (_) {
-      return raw.toString();
+      return '-';
     }
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Dialog(
-      backgroundColor: Colors.transparent,
-      insetPadding: const EdgeInsets.all(0),
-      child: Stack(
+  // ================= STATUS BADGE =================
+  Widget _statusBadge(String key) {
+    final isApprove = key == 'approve';
+    final color = isApprove ? Colors.green : Colors.red;
+    final text = isApprove ? 'DISETUJUI' : 'DITOLAK';
+    final icon = isApprove ? Icons.check_circle : Icons.cancel;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.15),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          Container(
-            decoration: BoxDecoration(
-              color: Colors.black.withOpacity(0.3),
+          Icon(icon, color: color, size: 16),
+          const SizedBox(width: 6),
+          Text(
+            text,
+            style: TextStyle(
+              color: color,
+              fontWeight: FontWeight.bold,
             ),
           ),
+        ],
+      ),
+    );
+  }
+  // =================================================
+
+  @override
+  Widget build(BuildContext context) {
+    final data = widget.data;
+
+    final statusKey =
+        data['status']?.toString() == '1' ? 'approve' : 'ditolak';
+
+    final judul = data['judul'] ?? '-';
+    final deskripsi = data['deskripsi'] ?? '-';
+    final pembimbing =
+        data['dosen_nama'] ?? data['pembimbing'] ?? '-';
+    final tanggal = _formatTanggal(data['tanggal']);
+    final filePath = data['file_url']?.toString() ?? '-';
+    final fileName =
+        filePath != '-' ? filePath.split('/').last : '-';
+    final catatan =
+        data['catatan_dosen'] ?? data['catatan'] ?? '-';
+
+    return Dialog(
+      backgroundColor: Colors.transparent,
+      insetPadding: EdgeInsets.zero,
+      child: Stack(
+        children: [
+          Container(color: Colors.black.withOpacity(0.4)),
           Center(
             child: Container(
-              width: double.infinity,
               margin: const EdgeInsets.symmetric(horizontal: 16),
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
@@ -79,53 +117,30 @@ class _DetailBimbinganDialogState extends State<DetailBimbinganDialog> {
               ),
               child: FutureBuilder<Map<String, dynamic>>(
                 future: _profileFuture,
-                builder: (context, snapshot) {
-                  if (snapshot.connectionState == ConnectionState.waiting) {
-                    return const Center(child: CircularProgressIndicator());
+                builder: (context, snap) {
+                  if (snap.connectionState == ConnectionState.waiting) {
+                    return const Center(
+                        child: CircularProgressIndicator());
                   }
-                  if (snapshot.hasError) {
+
+                  if (snap.hasError) {
                     return Center(
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            'Gagal memuat profil:\n${snapshot.error}',
-                            textAlign: TextAlign.center,
-                            style: const TextStyle(color: Colors.red),
-                          ),
-                          const SizedBox(height: 16),
-                          ElevatedButton(
-                            onPressed: () {
-                              setState(() {
-                                _profileFuture = _fetchProfile();
-                              });
-                            },
-                            child: const Text('Coba Lagi'),
-                          ),
-                        ],
-                      ),
-                    );
+                        child: Text(
+                      snap.error.toString(),
+                      style: const TextStyle(color: Colors.red),
+                    ));
                   }
 
-                  final profile = snapshot.data ?? {};
-                  final namaMahasiswa = profile['nama'] ?? '-';
-                  final nim = profile['nim']?.toString() ?? '-';
+                  final profile = snap.data!;
+                  final nama = profile['nama'] ?? '-';
+                  final nim = profile['nim'] ?? '-';
                   final prodi = profile['prodi'] ?? '-';
-
-                  final data = widget.data;
-                  final judul = data['judul'] ?? '-';
-                  final deskripsi = data['deskripsi'] ?? '-';
-                  final pembimbing = data['dosen_nama'] ?? data['pembimbing'] ?? '-';
-                  final tanggal = _formatTanggal(data['tanggal']);
-                  final filePath = data['file_url']?.toString() ?? '-';
-                  final fileName = filePath != '-' ? filePath.split('/').last : '-';
-                  final catatan = data['catatan_dosen'] ?? data['catatan'] ?? '-';
 
                   return SingleChildScrollView(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // HEADER
+                        // ===== HEADER MAHASISWA =====
                         Container(
                           width: double.infinity,
                           padding: const EdgeInsets.all(14),
@@ -134,10 +149,11 @@ class _DetailBimbinganDialogState extends State<DetailBimbinganDialog> {
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
+                            crossAxisAlignment:
+                                CrossAxisAlignment.start,
                             children: [
                               Text(
-                                namaMahasiswa.toUpperCase(),
+                                nama.toUpperCase(),
                                 style: const TextStyle(
                                   color: Colors.white,
                                   fontWeight: FontWeight.bold,
@@ -145,54 +161,64 @@ class _DetailBimbinganDialogState extends State<DetailBimbinganDialog> {
                                 ),
                               ),
                               const SizedBox(height: 4),
-                              Text("$nim — $prodi",
-                                  style: const TextStyle(color: Colors.white)),
+                              Text(
+                                "$nim — $prodi",
+                                style: const TextStyle(
+                                    color: Colors.white),
+                              ),
                             ],
                           ),
                         ),
+
+                        const SizedBox(height: 12),
+                        _statusBadge(statusKey),
+
                         const SizedBox(height: 16),
 
                         const Text("Judul Bimbingan",
-                            style: TextStyle(fontWeight: FontWeight.bold)),
-                        const SizedBox(height: 4),
+                            style:
+                                TextStyle(fontWeight: FontWeight.bold)),
                         Text(judul),
 
                         const SizedBox(height: 12),
                         const Text("Deskripsi",
-                            style: TextStyle(fontWeight: FontWeight.bold)),
-                        const SizedBox(height: 4),
+                            style:
+                                TextStyle(fontWeight: FontWeight.bold)),
                         Text(deskripsi),
 
                         const SizedBox(height: 12),
                         const Text("Dosen Pembimbing",
-                            style: TextStyle(fontWeight: FontWeight.bold)),
-                        const SizedBox(height: 4),
+                            style:
+                                TextStyle(fontWeight: FontWeight.bold)),
                         Text(pembimbing.toString()),
 
                         const SizedBox(height: 12),
                         const Text("Jadwal Bimbingan",
-                            style: TextStyle(fontWeight: FontWeight.bold)),
-                        const SizedBox(height: 4),
+                            style:
+                                TextStyle(fontWeight: FontWeight.bold)),
                         Text(tanggal),
 
                         const SizedBox(height: 12),
                         const Text("File",
-                            style: TextStyle(fontWeight: FontWeight.bold)),
-                        const SizedBox(height: 4),
+                            style:
+                                TextStyle(fontWeight: FontWeight.bold)),
                         Text(fileName),
 
                         const SizedBox(height: 12),
                         const Text("Catatan Dosen",
-                            style: TextStyle(fontWeight: FontWeight.bold)),
-                        const SizedBox(height: 4),
+                            style:
+                                TextStyle(fontWeight: FontWeight.bold)),
                         Text(catatan),
 
                         const SizedBox(height: 20),
+
+                        // ===== ACTION =====
                         Row(
                           mainAxisAlignment: MainAxisAlignment.end,
                           children: [
                             TextButton(
-                                onPressed: () => Navigator.pop(context),
+                                onPressed: () =>
+                                    Navigator.pop(context),
                                 child: const Text("Tutup")),
                             const SizedBox(width: 8),
                             ElevatedButton.icon(
@@ -201,12 +227,14 @@ class _DetailBimbinganDialogState extends State<DetailBimbinganDialog> {
                                   : () {
                                       Navigator.pop(context);
                                       Navigator.push(
-                                          context,
-                                          MaterialPageRoute(
-                                              builder: (_) =>
-                                                  FilePreviewScreen(fileUrl: filePath)));
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (_) =>
+                                              FilePreviewScreen(
+                                                  fileUrl: filePath),
+                                        ),
+                                      );
                                     },
-                              icon: const Icon(Icons.picture_as_pdf),
                               label: const Text("Lihat File"),
                               style: ElevatedButton.styleFrom(
                                   backgroundColor: Colors.blue),

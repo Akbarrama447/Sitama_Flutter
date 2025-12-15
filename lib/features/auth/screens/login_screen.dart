@@ -5,7 +5,6 @@ import '../../../main.dart'; // Untuk akses storageService
 import '../../../core/services/api_service.dart';
 import '../../dashboard/screens/dashboard_screen.dart';
 import 'ganti_password_screen.dart';
-import 'package:sitama/core/services/storage_service.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -22,7 +21,7 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _isPasswordVisible = false;
   bool _rememberMe = false;
 
-  // Fungsi login (logika tetap sama, hanya penyimpanan profile diperbaiki)
+  // Fungsi login: gabungkan file1 (profil lengkap) + UI file2
   Future<void> _login() async {
     if (!_formKey.currentState!.validate()) return;
 
@@ -47,11 +46,10 @@ class _LoginScreenState extends State<LoginScreen> {
         final token = responseBody['token'];
         final userData = responseBody['user'];
 
-        // --- FIXED: simpan token dan profile lengkap ---
+        // --- SIMPAN TOKEN + PROFIL LENGKAP ---
         await storageService.saveToken(token);
 
         if (userData != null && userData is Map<String, dynamic>) {
-          // Pastikan semua field disimpan sebagai string
           final profileData = {
             'nama': userData['nama'] ?? '',
             'nim': userData['nim']?.toString() ?? '',
@@ -76,15 +74,10 @@ class _LoginScreenState extends State<LoginScreen> {
     } catch (e) {
       _showErrorDialog('Gagal terhubung ke server. Cek koneksi internet Anda.');
     } finally {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-      }
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
-  // Helper untuk menampilkan dialog error
   void _showErrorDialog(String message) {
     if (mounted) {
       showDialog(
@@ -172,9 +165,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                       keyboardType: TextInputType.emailAddress,
                       validator: (value) {
-                        if (value == null ||
-                            value.trim().isEmpty ||
-                            !value.contains('@')) {
+                        if (value == null || value.trim().isEmpty || !value.contains('@')) {
                           return 'Masukkan email yang valid';
                         }
                         return null;
@@ -190,22 +181,16 @@ class _LoginScreenState extends State<LoginScreen> {
                         hintText: 'Masukkan password anda',
                         suffixIcon: IconButton(
                           icon: Icon(
-                            _isPasswordVisible
-                                ? Icons.visibility_off
-                                : Icons.visibility,
+                            _isPasswordVisible ? Icons.visibility_off : Icons.visibility,
                             color: Colors.grey[600],
                           ),
                           onPressed: () {
-                            setState(() {
-                              _isPasswordVisible = !_isPasswordVisible;
-                            });
+                            setState(() => _isPasswordVisible = !_isPasswordVisible);
                           },
                         ),
                       ),
                       validator: (value) {
-                        if (value == null || value.trim().isEmpty) {
-                          return 'Password tidak boleh kosong';
-                        }
+                        if (value == null || value.trim().isEmpty) return 'Password tidak boleh kosong';
                         return null;
                       },
                     ),
@@ -217,11 +202,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           children: [
                             Checkbox(
                               value: _rememberMe,
-                              onChanged: (value) {
-                                setState(() {
-                                  _rememberMe = value ?? false;
-                                });
-                              },
+                              onChanged: (value) => setState(() => _rememberMe = value ?? false),
                             ),
                             const Text('Ingat Saya'),
                           ],
@@ -229,9 +210,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         TextButton(
                           onPressed: () {
                             Navigator.of(context).push(
-                              MaterialPageRoute(
-                                builder: (_) => const GantiPasswordScreen(),
-                              ),
+                              MaterialPageRoute(builder: (_) => const GantiPasswordScreen()),
                             );
                           },
                           child: const Text('Lupa password?'),
@@ -249,7 +228,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             child: ElevatedButton(
                               onPressed: _login,
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: Color.fromARGB(255, 116, 165, 250),
+                                backgroundColor: const Color.fromARGB(255, 116, 165, 250),
                                 foregroundColor: Colors.white,
                                 elevation: 0,
                                 shape: RoundedRectangleBorder(
@@ -258,11 +237,7 @@ class _LoginScreenState extends State<LoginScreen> {
                               ),
                               child: const Text(
                                 'Masuk',
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w600,
-                                  letterSpacing: 0.5,
-                                ),
+                                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, letterSpacing: 0.5),
                               ),
                             ),
                           ),
@@ -276,12 +251,7 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  InputDecoration _buildInputDecoration(
-    String label,
-    IconData prefixIcon, {
-    Widget? suffixIcon,
-    String? hintText,
-  }) {
+  InputDecoration _buildInputDecoration(String label, IconData prefixIcon, {Widget? suffixIcon, String? hintText}) {
     return InputDecoration(
       labelText: label,
       hintText: hintText,
