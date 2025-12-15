@@ -1,11 +1,14 @@
+// file: lib/features/tugas_akhir/screens/tugas_akhir_tab.dart
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
-import 'package:intl/intl.dart'; // Untuk format tanggal
-
-import '../../../main.dart'; // Untuk storageService
+import 'package:intl/intl.dart';
+import '../../../main.dart'; // storageService
 import '../../auth/screens/login_screen.dart';
 import 'add_log_screen.dart';
+import 'edit_log_screen.dart';
+import 'detail_bimbingan_dialog.dart';
+import 'file_preview_screen.dart';
 
 class TugasAkhirTab extends StatefulWidget {
   const TugasAkhirTab({super.key});
@@ -15,73 +18,182 @@ class TugasAkhirTab extends StatefulWidget {
 }
 
 class _TugasAkhirTabState extends State<TugasAkhirTab> {
-  late Future<List<dynamic>> _logsFuture;
-  // Sesuaikan IP backend lo
-  final String _baseUrl = 'http://localhost:8000';
-
-  // Target bimbingan (misal minimal 8 kali)
+  final String _baseUrl = 'http://172.20.10.6:8000';
   final int _targetBimbingan = 8;
 
-  // Filter state
+  late Future<void> _initFuture;
+  List<Map<String, dynamic>> _pembimbingList = [];
+  final Map<dynamic, List<dynamic>> _logsPerPembimbing = {};
+
+  int _currentIndex = 0;
+  final PageController _pageController = PageController();
   String _selectedFilter = 'Semua Bimbingan';
 
   @override
   void initState() {
     super.initState();
-    _logsFuture = _fetchLogs();
+    _initFuture = _initialize();
   }
 
-  Future<List<dynamic>> _fetchLogs() async {
-    try {
-      final token = await storageService.getToken();
-      if (token == null) {
-        _forceLogout();
-        return [];
-      }
-      final url = '$_baseUrl/api/log-bimbingan';
-      debugPrint('DEBUG: Fetching logs from $url');
-      final response = await http.get(
-        Uri.parse(url),
-        headers: {
-          'Authorization': 'Bearer $token',
-          'Accept': 'application/json',
-        },
-      );
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
 
-      debugPrint('DEBUG: Logs API Response: ${response.statusCode}');
-      debugPrint('DEBUG: Logs API Body: ${response.body}');
-
-      if (response.statusCode == 200) {
-        return jsonDecode(response.body) as List<dynamic>;
-      } else if (response.statusCode == 401) {
-        _forceLogout();
-        return [];
-      } else if (response.statusCode == 404) {
-        // Handle kasus saat belum ada tugas akhir
-        final responseBody = jsonDecode(response.body);
-        if (responseBody['message'] != null &&
-            responseBody['message'].toString().toLowerCase().contains('belum ada tugas akhir')) {
-          // Kembalikan list kosong jika belum ada tugas akhir
-          return [];
-        } else {
-          throw Exception('Gagal load log: ${response.statusCode} - ${response.body}');
-        }
-      } else {
-        throw Exception('Gagal load log: ${response.statusCode} - ${response.body}');
-      }
-    } catch (e) {
-      debugPrint('Error fetching logs: $e');
-      // buat nampilin error di UI
-      throw Exception('Gagal terhubung ke server: $e');
+  Future<void> _initialize() async {
+    await _fetchPembimbing();
+    if (_pembimbingList.isNotEmpty) {
+      await _fetchLogsForUrutan(_pembimbingList[_currentIndex]['urutan']);
     }
+  }
+
+  Future<void> _fetchPembimbing() async {
+    final token = await storageService.getToken();
+    if (token == null) return _forceLogout();
+
+    final url = '$_baseUrl/api/pembimbing';
+    final res = await http.get(Uri.parse(url), headers: {
+      'Authorization': 'Bearer $token',
+      'Accept': 'application/json',
+    });
+
+    if (res.statusCode == 200) {
+      final list = jsonDecode(res.body) as List<dynamic>;
+      setState(() {
+        _pembimbingList = list.map((e) => Map<String, dynamic>.from(e)).toList();
+      });
+    } else if (res.statusCode == 401) {
+      _forceLogout();
+    }
+  }
+
+  Future<void> _fetchLogsForUrutan(dynamic urutan) async {
+    final token = await storageService.getToken();
+    if (token == null) return _forceLogout();
+
+    final url = '$_baseUrl/api/log-bimbingan?urutan=$urutan';
+    final res = await http.get(Uri.parse(url), headers: {
+      'Authorization': 'Bearer $token',
+      'Accept': 'application/json',
+    });
+
+    if (res.statusCode == 200) {
+      final list = jsonDecode(res.body) as List<dynamic>;
+      setState(() => _logsPerPembimbing[urutan] = list);
+    } else if (res.statusCode == 401) {
+      _forceLogout();
+    }
+  }
+
+  Future<void> _refreshLogsForUrutan(dynamic urutan) async {
+    await _fetchLogsForUrutan(urutan);
   }
 
   void _forceLogout() {
     storageService.deleteToken();
-    if (mounted) {
-      Navigator.of(context, rootNavigator: true).pushAndRemoveUntil(
-        MaterialPageRoute(builder: (context) => const LoginScreen()),
-        (route) => false,
+    if (!mounted) return;
+
+    Navigator.of(context, rootNavigator: true).pushAndRemoveUntil(
+      MaterialPageRoute(builder: (context) => const LoginScreen()),
+      (route) => false,
+    );
+  }
+
+  void _goPrevious() {
+    if (_currentIndex > 0) {
+      final newIndex = _currentIndex - 1;
+      _pageController.animateToPage(
+        newIndex,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeInOut,
+      );
+      setState(() => _currentIndex = newIndex);
+      _fetchLogsForUrutan(_pembimbingList[newIndex]['urutan']);
+    }
+  }
+
+  void _goNext() {
+    if (_currentIndex < _pembimbingList.length - 1) {
+      final newIndex = _currentIndex + 1;
+      _pageController.animateToPage(
+        newIndex,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeInOut,
+      );
+      setState(() => _currentIndex = newIndex);
+      _fetchLogsForUrutan(_pembimbingList[newIndex]['urutan']);
+    }
+  }
+
+  // Map backend status (0/1/2) to string key
+  String _mapStatus(dynamic raw) {
+    final val = raw?.toString() ?? '0';
+    switch (val) {
+      case '1':
+        return 'approve';
+      case '2':
+        return 'ditolak';
+      default:
+        return 'pending';
+    }
+  }
+
+  // Return display label for status
+  String _labelStatus(String key) {
+    switch (key) {
+      case 'approve':
+        return 'Disetujui';
+      case 'ditolak':
+        return 'Ditolak';
+      default:
+        return 'Menunggu';
+    }
+  }
+
+  // Icon and color for status
+  Map<String, dynamic> _statusIconAndColor(String key) {
+    if (key == 'approve') {
+      return {'icon': Icons.check_circle, 'color': Colors.green};
+    } else if (key == 'ditolak') {
+      return {'icon': Icons.warning, 'color': Colors.red};
+    } else {
+      return {'icon': Icons.edit, 'color': Colors.orange};
+    }
+  }
+
+    Color _statusBackgroundColor(String key) {
+    switch (key) {
+      case 'approve':
+        return Colors.green.withOpacity(0.08);
+      case 'ditolak':
+        return Colors.red.withOpacity(0.08);
+      default:
+        return Colors.orange.withOpacity(0.10);
+    }
+  }
+
+
+  void _onStatusTap(Map<String, dynamic> log) async {
+    final statusKey = _mapStatus(log['status']);
+    if (statusKey == 'pending') {
+      // pending => open edit screen (full screen)
+      final result = await Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => EditLogScreen(log: log)),
+      );
+      if (result == true) {
+        // if edited successfully, refresh
+        final urutan = log['pembimbing_urutan'] ?? log['urutan'] ?? _pembimbingList[_currentIndex]['urutan'];
+        await _refreshLogsForUrutan(urutan);
+      }
+    } else {
+      // approve OR ditolak => show popup dialog (blur/dim background)
+      showDialog(
+        context: context,
+        barrierDismissible: true,
+        barrierColor: Colors.black.withOpacity(0.5),
+        builder: (context) => DetailBimbinganDialog(data: log),
       );
     }
   }
@@ -89,374 +201,327 @@ class _TugasAkhirTabState extends State<TugasAkhirTab> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FD), // Background agak abu terang
-      body: FutureBuilder<List<dynamic>>(
-        future: _logsFuture,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
+      backgroundColor: const Color(0xFFF8F9FD),
+      body: FutureBuilder<void>(
+        future: _initFuture,
+        builder: (context, snap) {
+          if (snap.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
           }
-          if (snapshot.hasError) {
-            // Cek apakah error karena belum ada tugas akhir
-            String errorText = snapshot.error.toString();
-            if (errorText.toLowerCase().contains('belum ada tugas akhir') ||
-                errorText.toLowerCase().contains('404')) {
-              return Center(
-                child: Padding(
-                  padding: const EdgeInsets.all(32.0),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Icon(Icons.assignment_outlined, size: 80, color: Colors.grey),
-                      const SizedBox(height: 16),
-                      const Text(
-                        'Belum ada tugas akhir',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.grey
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'Silakan daftarkan tugas akhir terlebih dahulu',
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Colors.grey[600]
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              );
-            } else {
-              return Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Icon(Icons.error_outline, size: 80, color: Colors.red),
-                    const SizedBox(height: 16),
-                    Text('Error: ${snapshot.error}',
-                         style: const TextStyle(color: Colors.red)),
-                  ],
-                ),
-              );
-            }
+
+          if (_pembimbingList.isEmpty) {
+            return const Center(child: Text('Tidak ada pembimbing terdaftar.'));
           }
 
-          final allLogs = snapshot.data ?? [];
-          // Filter logs based on selected filter
-          final logs = _selectedFilter == 'Semua Bimbingan'
-              ? allLogs
-              : _selectedFilter == 'Disetujui'
-                  ? allLogs.where((log) => log['status'] == 1).toList()
-                  : allLogs.where((log) => log['status'] == 0).toList(); // Menunggu
+          return Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: _buildStatusCardForIndex(_currentIndex),
+              ),
+              Expanded(
+                child: PageView.builder(
+                  controller: _pageController,
+                  itemCount: _pembimbingList.length,
+                  onPageChanged: (idx) async {
+                    setState(() => _currentIndex = idx);
+                    await _fetchLogsForUrutan(_pembimbingList[idx]['urutan']);
+                  },
+                  itemBuilder: (context, index) {
+                    final pembimbing = _pembimbingList[index];
+                    final urutan = pembimbing['urutan'];
+                    final logs = _logsPerPembimbing[urutan] ?? [];
 
-          // Hitung jumlah bimbingan yang sudah disetujui (status == 1)
-          // Atau hitung semua log, tergantung kebijakan kampus lo.
-          final progressCount = allLogs.length;
-          final progressValue = (progressCount / _targetBimbingan).clamp(0.0, 1.0);
+                    final filtered = _selectedFilter == 'Semua Bimbingan'
+                        ? logs
+                        : _selectedFilter == 'Disetujui'
+                            ? logs.where((l) => _mapStatus(l['status']) == 'approve').toList()
+                            : _selectedFilter == 'Menunggu'
+                                ? logs.where((l) => _mapStatus(l['status']) == 'pending').toList()
+                                : logs.where((l) => _mapStatus(l['status']) == 'ditolak').toList();
 
-          return SingleChildScrollView(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // 1. HEADER STATUS
-                _buildStatusCard(progressCount, progressValue),
 
-                const SizedBox(height: 24),
+                    final progressCount = logs.length;
+                    final progressValue = (progressCount / _targetBimbingan).clamp(0.0, 1.0);
 
-                // 2. JUDUL & KONTROL (Filter + Tambah)
-                const Text(
-                  'Pembimbingan',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF2C3E50)),
+                    return SingleChildScrollView(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Pembimbingan',
+                            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF2C3E50)),
+                          ),
+                          const SizedBox(height: 12),
+                          _buildControls(pembimbing, urutan, progressCount, progressValue),
+                          const SizedBox(height: 16),
+                          filtered.isEmpty
+                              ? _buildEmptyState()
+                              : ListView.builder(
+                                  shrinkWrap: true,
+                                  physics: const NeverScrollableScrollPhysics(),
+                                  itemCount: filtered.length,
+                                  itemBuilder: (_, i) => _buildLogItem(filtered[i]),
+                                ),
+                          const SizedBox(height: 80),
+                        ],
+                      ),
+                    );
+                  },
                 ),
-                const SizedBox(height: 12),
-                _buildControls(),
-
-                const SizedBox(height: 16),
-
-                // 3. LIST LOG
-                if (logs.isEmpty)
-                  _buildEmptyState()
-                else
-                  ListView.builder(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    itemCount: logs.length,
-                    itemBuilder: (context, index) {
-                      return _buildLogItem(logs[index]);
-                    },
-                  ),
-
-                const SizedBox(height: 80), // Space bawah
-              ],
-            ),
+              ),
+            ],
           );
         },
       ),
     );
   }
 
-  // --- WIDGETS ---
+  Widget _buildStatusCardForIndex(int index) {
+    final pembimbing = _pembimbingList[index];
+    final urutan = pembimbing['urutan'];
+    final name = pembimbing['dosen_nama'] ?? 'Pembimbing';
 
-  Widget _buildStatusCard(int count, double progress) {
+    final logs = _logsPerPembimbing[urutan] ?? [];
+    final progressCount = logs.length;
+    final progressValue = (progressCount / _targetBimbingan).clamp(0.0, 1.0);
+
     return Card(
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Text(
-                  'Status Bimbingan',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF2C3E50)),
-                ),
-                // Link Cetak (Placeholder)
-                InkWell(
-                  onTap: () => debugPrint('Cetak diklik'),
-                  child: Row(
-                    children: [
-                      const Icon(Icons.print_outlined, size: 16, color: Colors.grey),
-                      const SizedBox(width: 4),
-                      const Text('Cetak lembar persetujuan', style: TextStyle(fontSize: 12, color: Colors.grey)),
-                    ],
-                  ),
-                )
-              ],
-            ),
-            const SizedBox(height: 16),
-            Row(
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Nama Mahasiswa (Bisa ambil dari storage jika mau dinamis)
-                      FutureBuilder<String?>(
-                        future: storageService.getUserName(),
-                        builder: (context, snapshot) => Text(
-                           snapshot.data ?? 'Mahasiswa',
-                           style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      // Progress Bar
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(10),
-                        child: LinearProgressIndicator(
-                          value: progress,
-                          minHeight: 10,
-                          backgroundColor: Colors.grey[200],
-                          color: const Color(0xFF03A9F4), // Warna biru muda sesuai gambar
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Align(
-                        alignment: Alignment.centerRight,
-                        child: Text(
-                          '$count/$_targetBimbingan',
-                          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 16),
-                // Tombol Lembar Kontrol
-                Container(
-                  width: 50,
-                  height: 50,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF039BE5),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Icon(Icons.assignment_outlined, color: Colors.white),
-                      const Text('Kontrol', style: TextStyle(color: Colors.white, fontSize: 9)),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildControls() {
-    return Row(
-      children: [
-        // Dropdown Filter
-        Expanded(
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              border: Border.all(color: Colors.grey.shade300),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: DropdownButtonHideUnderline(
-              child: DropdownButton<String>(
-                value: _selectedFilter,
-                isExpanded: true,
-                items: ['Semua Bimbingan', 'Disetujui', 'Menunggu'].map((String value) {
-                  return DropdownMenuItem<String>(
-                    value: value,
-                    child: Text(value, style: const TextStyle(fontSize: 14)),
-                  );
-                }).toList(),
-                onChanged: (val) {
-                  if (val != null) {
-                    setState(() {
-                      _selectedFilter = val;
-                    });
-                  }
-                },
-              ),
-            ),
-          ),
-        ),
-        const SizedBox(width: 12),
-        // Tombol Tambah
-        ElevatedButton(
-          onPressed: () async {
-            final result = await Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => const AddLogScreen()),
-            );
-            if (result == true) {
-              // Refresh the list
-              setState(() {
-                _logsFuture = _fetchLogs();
-              });
-            }
-          },
-          style: ElevatedButton.styleFrom(
-            backgroundColor: const Color(0xFF03A9F4), // Warna biru sesuai gambar
-            foregroundColor: Colors.white,
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-          ),
-          child: const Text('Tambah', style: TextStyle(fontWeight: FontWeight.bold)),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildLogItem(dynamic logData) {
-    final log = logData as Map<String, dynamic>;
-
-    // Parse tanggal dari String "YYYY-MM-DD" ke DateTime
-    final date = DateTime.parse(log['tanggal']);
-    // Format ke "Senin, 1 Maret 2025" (tanpa locale untuk menghindari error)
-    final formattedDate = DateFormat('EEEE, d MMMM yyyy').format(date);
-  // Pisahkan tanggal untuk tampilan 2 baris (opsional, sesuai selera desain)
-  // (tidak digunakan sekarang — hapus jika tidak diperlukan)
-
-    final status = log['status']; // 0, 1, atau 2
-
-    // Tentukan icon berdasarkan status
-    IconData statusIcon;
-    Color statusColor;
-    if (status == 1) { // Disetujui
-      statusIcon = Icons.check;
-      statusColor = Colors.green;
-    } else if (status == 2) { // Ditolak
-      statusIcon = Icons.close;
-      statusColor = Colors.red;
-    } else { // 0 = Menunggu/Draft
-      statusIcon = Icons.edit;
-      statusColor = Colors.grey;
-    }
-
-    return Container(
-      margin: const EdgeInsets.only(bottom: 10),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.shade200),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start, // Biar rata atas
+      elevation: 4,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: Stack(
         children: [
-          // Kolom Tanggal
-          SizedBox(
-            width: 90,
-            child: Text(
-              // Ganti spasi dengan newline biar jadi 2 baris kayak di gambar
-              formattedDate.replaceFirst(', ', '\n'),
-              style: TextStyle(
-                fontSize: 13,
-                height: 1.4,
-                color: Colors.grey[700],
-                fontWeight: FontWeight.w500
+          Positioned(
+            left: -5,
+            top: 0,
+            bottom: 0,
+            child: Center(
+              child: IconButton(icon: const Icon(Icons.arrow_back_ios, size: 20), onPressed: _currentIndex > 0 ? _goPrevious : null),
+            ),
+          ),
+          Positioned(
+            right: -10,
+            top: 0,
+            bottom: 0,
+            child: Center(
+              child: IconButton(icon: const Icon(Icons.arrow_forward_ios, size: 20), onPressed: _currentIndex < _pembimbingList.length - 1 ? _goNext : null),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: const [
+                Text("Status Bimbingan", style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold)),
+                Text("Cetak lembar persetujuan", style: TextStyle(fontSize: 12)),
+              ]),
+              const SizedBox(height: 7),
+              Card(
+                elevation: 5,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    Text(name, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
+                    const SizedBox(height: 7),
+                    Row(children: [
+                      Expanded(
+                        child: Stack(alignment: Alignment.centerRight, children: [
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(10),
+                            child: LinearProgressIndicator(
+                              value: progressValue,
+                              minHeight: 16,
+                              backgroundColor: Colors.grey[300],
+                              color: Colors.blue,
+                            ),
+                          ),
+                          Padding(
+                            padding: const EdgeInsets.only(right: 8), // beri jarak 8px dari kanan
+                            child: Text(
+                              "$progressCount/$_targetBimbingan",
+                              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                            ),
+                          ),
+                        ]),
+                      ),
+                      const SizedBox(width: 14),
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(color: Colors.blue, borderRadius: BorderRadius.circular(10)),
+                        child: const Icon(Icons.description_outlined, color: Colors.white, size: 22),
+                      ),
+                    ]),
+                  ]),
+                ),
               ),
-            ),
-          ),
-          // Garis Pemisah Vertikal
-          Container(
-            height: 40,
-            width: 1,
-            color: Colors.grey.shade300,
-            margin: const EdgeInsets.symmetric(horizontal: 12),
-          ),
-          // Kolom Konten
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  log['dosen'] ?? 'Dosen',
-                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Color(0xFF2C3E50)),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  log['catatan'] ?? '-',
-                  style: TextStyle(fontSize: 13, color: Colors.grey[600]),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ],
-            ),
-          ),
-          // Kolom Icon Status
-          Container(
-            padding: const EdgeInsets.all(6),
-            decoration: BoxDecoration(
-              border: Border.all(color: Colors.grey.shade300),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Icon(statusIcon, size: 20, color: statusColor),
+            ]),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildEmptyState() {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32.0),
-        child: Column(
+  Widget _buildControls(Map<String, dynamic> pembimbing, int urutan, int progressCount, double progressValue) {
+    return Row(children: [
+      Expanded(
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          decoration: BoxDecoration(color: Colors.white, border: Border.all(color: Colors.grey.shade300), borderRadius: BorderRadius.circular(8)),
+          child: DropdownButtonHideUnderline(
+            child: DropdownButton<String>(
+              value: _selectedFilter,
+              isExpanded: true,
+              items: ['Semua Bimbingan', 'Menunggu', 'Ditolak', 'Disetujui'].map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
+              onChanged: (v) => setState(() => _selectedFilter = v!),
+            ),
+          ),
+        ),
+      ),
+      const SizedBox(width: 12),
+      ElevatedButton(
+        onPressed: () async {
+          final nama = pembimbing['dosen_nama'] ?? pembimbing['dosen_nip'] ?? '';
+          final result = await Navigator.push(context, MaterialPageRoute(builder: (context) => AddLogScreen(pembimbingNama: nama, pembimbingUrutan: urutan)));
+          if (result == true) _refreshLogsForUrutan(urutan);
+        },
+        style: ElevatedButton.styleFrom(backgroundColor: Colors.blue, foregroundColor: Colors.white, padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16)),
+        child: const Text("Tambah"),
+      ),
+    ]);
+  }
+
+  Widget _buildLogItem(dynamic logData) {
+    final log = (logData is Map) ? Map<String, dynamic>.from(logData) : <String, dynamic>{};
+
+    // safe date parse
+    DateTime date;
+    try {
+      date = DateTime.parse(log['tanggal'].toString());
+    } catch (_) {
+      date = DateTime.now();
+    }
+    final formattedDate = DateFormat('EEEE, d MMMM yyyy', 'id_ID').format(date);
+
+    final namaPembimbing = log['dosen_nama'] ?? log['pembimbing_nama'] ?? log['pembimbing'] ?? 'Pembimbing';
+
+    final statusKey = _mapStatus(log['status']);
+    final iconAndColor = _statusIconAndColor(statusKey);
+    final icon = iconAndColor['icon'] as IconData;
+    final color = iconAndColor['color'] as Color;
+    final bgColor = _statusBackgroundColor(statusKey);
+    final statusLabel = _labelStatus(statusKey);
+
+    return InkWell(
+      onTap: () => _onStatusTap(log), // 🔑 KLIK DI MANA SAJA
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 10),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        decoration: BoxDecoration(
+          color: bgColor,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.grey.shade200),
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            const Icon(Icons.history_edu_outlined, size: 80, color: Colors.grey),
-            const SizedBox(height: 16),
-            const Text('Belum ada riwayat bimbingan.', style: TextStyle(color: Colors.grey)),
-            const SizedBox(height: 4),
-            Text('Tambahkan log bimbingan pertama Anda', style: TextStyle(color: Colors.grey[600])),
+            SizedBox(
+              width: 80,
+              child: Text(
+                formattedDate.replaceFirst(', ', '\n'),
+                style: const TextStyle(
+                  fontSize: 13,
+                  height: 1.4,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+            Container(
+              width: 1,
+              height: 40,
+              color: Colors.grey.shade300,
+              margin: const EdgeInsets.symmetric(horizontal: 12),
+            ),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    namaPembimbing,
+                    style: const TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF2C3E50),
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    log['judul']?.toString() ?? '-',
+                    style: TextStyle(fontSize: 13, color: Colors.grey[600]),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 6),
+
+            // 🔵 InkWell ICON (boleh tetap ada)
+            Padding(
+              padding: const EdgeInsets.only(left: 10),
+              child: InkWell(
+                onTap: () => _onStatusTap(log),
+                borderRadius: BorderRadius.circular(8),
+                child: SizedBox(
+                  width: 50,
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(icon, size: 18, color: color),
+                      const SizedBox(height: 2),
+                      Text(
+                        statusLabel,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w600,
+                          color: color,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+
+  }
+
+    Widget _buildEmptyState() {
+    return SizedBox(
+      height: 300, // tinggi minimum agar terlihat di tengah area kosong
+      child: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: const [
+            Icon(Icons.history_edu_outlined, size: 80, color: Colors.grey),
+            SizedBox(height: 16),
+            Text(
+              'Belum ada riwayat bimbingan.',
+              style: TextStyle(fontSize: 16, color: Colors.grey),
+            ),
           ],
         ),
       ),
     );
   }
+
 }

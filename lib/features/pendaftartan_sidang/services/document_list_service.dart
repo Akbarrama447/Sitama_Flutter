@@ -13,7 +13,7 @@ class DocumentListService {
       }
 
       final response = await http.get(
-        Uri.parse('http://localhost:8000/api/my-uploaded-documents'),
+        Uri.parse('http://172.20.10.6:8000/api/my-uploaded-documents'),
         headers: {
           'Authorization': 'Bearer $token',
           'Accept': 'application/json',

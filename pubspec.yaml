@@ -28,7 +28,8 @@ dependencies:
     sdk: flutter
   flutter_localizations:
     sdk: flutter
-  
+  syncfusion_flutter_pdfviewer: ^31.2.18
+  url_launcher: ^6.2.6
   # TAMBAHKAN BARIS INI
   http: ^1.2.1
   shared_preferences: ^2.2.3
