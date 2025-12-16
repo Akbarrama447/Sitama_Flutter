@@ -5,9 +5,9 @@ class ScheduleDetailDialog extends StatelessWidget {
   final Map<String, dynamic> schedule;
 
   const ScheduleDetailDialog({
-    Key? key,
+    super.key,
     required this.schedule,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -48,7 +48,7 @@ class ScheduleDetailDialog extends StatelessWidget {
               alignment: Alignment.centerRight,
               child: TextButton(
                 onPressed: () => Navigator.of(context).pop(),
-                child: Text(
+                child: const Text(
                   'Tutup',
                   style: TextStyle(color: AppColors.primary),
                 ),
@@ -56,7 +56,7 @@ class ScheduleDetailDialog extends StatelessWidget {
             ),
           ],
         ),
-      ),
+      ),  
     );
   }
 

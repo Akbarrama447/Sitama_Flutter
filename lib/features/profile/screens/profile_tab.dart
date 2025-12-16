@@ -4,6 +4,7 @@ import 'dart:convert';
 import '../../../main.dart'; // Untuk akses storageService
 import '../../../core/services/api_service.dart';
 import '../../auth/screens/login_screen.dart'; // Untuk halaman login
+import 'ubah_password_screen.dart';
 
 // (Model UserProfile-nya masih sama persis)
 class UserProfile {
@@ -318,9 +319,13 @@ class _ProfileTabState extends State<ProfileTab> {
                 height: 55,
                 margin: const EdgeInsets.only(bottom: 16),
                 child: ElevatedButton.icon(
-                  onPressed: () {
-                    // TODO: Implementasi ganti password
-                  },
+                    onPressed: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => const UbahPasswordScreen(),
+                        ),
+                      );
+                    },
                   icon: const Icon(Icons.key_outlined),
                   label: const Text('Ubah password'),
                   style: ElevatedButton.styleFrom(
@@ -339,7 +344,7 @@ class _ProfileTabState extends State<ProfileTab> {
               ),
 
               // Tombol Logout
-              Container(
+              SizedBox(
                 width: double.infinity,
                 height: 55,
                 child: ElevatedButton.icon(

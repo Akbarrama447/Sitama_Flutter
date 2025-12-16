@@ -1,11 +1,13 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 import '../../../main.dart'; // Untuk akses storageService
 import '../../auth/screens/login_screen.dart'; // Untuk halaman login
 
 // --- IMPORT TAB KITA ---
 import '../../profile/screens/profile_tab.dart';
 import '../../home/screens/home_tab.dart'; // <-- BARU
-import '../../tugas_akhir/screens/tugas_akhir_tab.dart'; // <-- BARU
+import '../../log_bimbingan/screens/bimbingan_log.dart'; // <-- BARU
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -16,6 +18,36 @@ class DashboardScreen extends StatefulWidget {
 
 class _DashboardScreenState extends State<DashboardScreen> {
   int _selectedIndex = 0; // Halaman yang sedang aktif
+  String _userName = 'Mahasiswa';
+  final String _baseUrl = 'http://localhost:8000';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserName();
+  }
+
+  Future<void> _loadUserName() async {
+    try {
+      final token = await storageService.getToken();
+      if (token == null) return _logout();
+
+      final url = Uri.parse('$_baseUrl/api/user');
+      final response = await http.get(url, headers: {
+        'Authorization': 'Bearer $token',
+        'Accept': 'application/json',
+      });
+
+      if (response.statusCode == 200) {
+        final userData = jsonDecode(response.body);
+        setState(() {
+          _userName = userData['nama'] ?? 'User';
+        });
+      }
+    } catch (e) {
+      debugPrint('Error loading user data: $e');
+    }
+  }
 
   // --- REVISI: GANTI PLACEHOLDER DENGAN WIDGET ASLI ---
   static final List<Widget> _widgetOptions = <Widget>[
@@ -26,8 +58,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
     const TugasAkhirTab(), // <-- DIGANTI
 
     // Index 2: Profil
-    ProfileTab(),
+    const ProfileTab(),
   ];
+
+
 
   // Fungsi untuk pindah tab
   void _onItemTapped(int index) {
@@ -54,15 +88,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
       appBar: _selectedIndex == 2
           ? null // Jangan tampilkan AppBar di Halaman Profil
           : AppBar(
-              title: const Text('SISTEM TA'),
-              backgroundColor: const Color(0xFF1565C0),
+              title: const Text('Sitama - Sistem Tugas Akhir Mahasiswa'),
+              backgroundColor: const Color.fromARGB(255, 255, 255, 255),
               titleTextStyle: const TextStyle(
-                color: Colors.white,
+                color: Color.fromARGB(131, 14, 14, 14),
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
               ),
-              iconTheme: const IconThemeData(color: Colors.white),
+              iconTheme: const IconThemeData(color: Color.fromARGB(255, 116, 165, 250)),
               actions: [
+                // Tombol Logout
                 IconButton(
                   icon: const Icon(Icons.logout),
                   onPressed: _logout,
@@ -108,7 +143,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 label: 'Home',
               ),
               BottomNavigationBarItem(
-                icon: Icon(Icons.school_outlined), // Ikon TA
+                icon: Icon(Icons.school_outlined),
                 activeIcon: Icon(Icons.school),
                 label: 'TA',
               ),
