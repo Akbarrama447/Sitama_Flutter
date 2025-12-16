@@ -13,6 +13,7 @@ class UserProfile {
   final int nim;
   final String prodi;
   final String? fotoUrl;
+  final Map<String, dynamic>? thesisData;
 
   UserProfile({
     required this.nama,
@@ -20,6 +21,7 @@ class UserProfile {
     required this.nim,
     required this.prodi,
     this.fotoUrl,
+    this.thesisData,
   });
 
   factory UserProfile.fromJson(Map<String, dynamic> json) {
@@ -29,6 +31,7 @@ class UserProfile {
       nim: json['nim'] ?? 0,
       prodi: json['prodi'] ?? 'Prodi tidak ditemukan',
       fotoUrl: json['foto_profil'],
+      thesisData: null,
     );
   }
 }
@@ -68,7 +71,34 @@ class _ProfileTabState extends State<ProfileTab> {
 
       if (response.statusCode == 200) {
         final responseBody = json.decode(response.body);
-        return UserProfile.fromJson(responseBody['data']);
+        final userProfile = UserProfile.fromJson(responseBody['data']);
+
+        // Fetch thesis data
+        try {
+          final thesisResponse = await ApiService.getThesis(token);
+          final thesisData = thesisResponse['data'];
+
+          // Return user profile with thesis data
+          return UserProfile(
+            nama: userProfile.nama,
+            email: userProfile.email,
+            nim: userProfile.nim,
+            prodi: userProfile.prodi,
+            fotoUrl: userProfile.fotoUrl,
+            thesisData: thesisData, // Add thesis data if available
+          );
+        } catch (e) {
+          // If thesis data fetch fails (e.g., user doesn't have thesis), return profile without thesis
+          // This could happen with 404 "Tugas akhir tidak ditemukan" error
+          return UserProfile(
+            nama: userProfile.nama,
+            email: userProfile.email,
+            nim: userProfile.nim,
+            prodi: userProfile.prodi,
+            fotoUrl: userProfile.fotoUrl,
+            thesisData: null, // No thesis data
+          );
+        }
       } else if (response.statusCode == 401) {
         // Token expired, auto logout
         _logout(true); // Panggil logout
@@ -310,6 +340,97 @@ class _ProfileTabState extends State<ProfileTab> {
                 label: 'Program Studi',
                 value: profile.prodi,
               ),
+
+              // Show thesis data if available
+              if (profile.thesisData != null) ...[
+                const SizedBox(height: 24),
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.blue[50], // Light blue background
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.blue[200]!, width: 1), // Blue border
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          const Icon(Icons.assignment_outlined, color: Colors.blue),
+                          const SizedBox(width: 8),
+                          Text(
+                            'Tugas Akhir',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.blue[800],
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      _buildInfoRow(
+                        context,
+                        icon: Icons.book_outlined,
+                        label: 'Judul Tugas Akhir',
+                        value: profile.thesisData!['judul'] ?? 'Tidak ada judul',
+                      ),
+                      const SizedBox(height: 12),
+                      _buildInfoRow(
+                        context,
+                        icon: Icons.description_outlined,
+                        label: 'Deskripsi',
+                        value: profile.thesisData!['deskripsi'] ?? 'Tidak ada deskripsi',
+                      ),
+                      const SizedBox(height: 12),
+                      _buildInfoRow(
+                        context,
+                        icon: Icons.flag_outlined,
+                        label: 'Status',
+                        value: profile.thesisData!['status'] ?? '-',
+                      ),
+                    ],
+                  ),
+                ),
+              ] else ...[
+                // If no thesis data, just show a message
+                const SizedBox(height: 16),
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.grey[100], // Light grey background
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.grey[300]!, width: 1), // Grey border
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          const Icon(Icons.info_outlined, color: Colors.grey),
+                          const SizedBox(width: 8),
+                          Text(
+                            'Tugas Akhir',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.grey[700],
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Anda belum mendaftar Tugas Akhir',
+                        style: TextStyle(
+                          fontSize: 16,
+                          color: Colors.grey[600],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
 
               const SizedBox(height: 32),
 
