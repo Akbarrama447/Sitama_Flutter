@@ -30,7 +30,7 @@ class _AddLogScreenState extends State<AddLogScreen> {
   bool _isLoading = false;
 
   // Base URL backend
-  final String _baseUrl = 'http://172.20.10.6:8000';
+  final String _baseUrl = 'http://172.16.166.43:8000';
 
   @override
   void initState() {

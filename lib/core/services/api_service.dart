@@ -7,7 +7,7 @@ class ApiService {
   // --- GANTI INI DENGAN IP LARAVEL KAMU ---
   // Gunakan '10.0.2.2' jika pakai Emulator Android
   // Gunakan IP Wifi (cth: 192.168.1.10) jika pakai HP asli
-  static const String apiHost = 'http://172.20.10.6:8000';
+  static const String apiHost = 'http://172.16.166.43:8000';
   // ----------------------------------------
 
   // Nanti semua endpoint bisa kita daftarin di sini
@@ -17,6 +17,11 @@ class ApiService {
   static const String tugasAkhirUrl = '$apiHost/api/tugas-akhir';
   static const String uploadDokumenUrl = '$apiHost/api/upload-dokumen';
   // ... dst
+  //revisi,lulus
+  static const String nilaiSidangUrl = '$apiHost/api/nilai-sidang';
+  static const String revisiTugasAkhirUrl = '$apiHost/api/revisi-tugas-akhir';
+
+
 
   // Method untuk membuat tugas akhir baru
   static Future<void> createThesis({
@@ -135,6 +140,45 @@ class ApiService {
       }
 
       throw Exception(errorMessage);
+    }
+  }
+
+  //nilai
+  static Future<Map<String, dynamic>> getNilaiSidang(int tugasAkhirId) async {
+    final response = await http.get(
+      Uri.parse('$nilaiSidangUrl/$tugasAkhirId'),
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    );
+
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body);
+    } else {
+      throw Exception('Gagal mengambil nilai sidang');
+    }
+  }
+
+  //revisi
+  static Future<void> submitRevisi({
+    required int tugasAkhirId,
+    required String catatan,
+  }) async {
+    final response = await http.post(
+      Uri.parse(revisiTugasAkhirUrl),
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: jsonEncode({
+        'tugas_akhir_id': tugasAkhirId,
+        'catatan_revisi': catatan,
+        'status_revisi': 0,
+      }),
+    );
+
+    if (response.statusCode != 200 &&
+        response.statusCode != 201) {
+      throw Exception('Gagal mengirim revisi');
     }
   }
 
