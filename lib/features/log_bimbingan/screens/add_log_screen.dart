@@ -7,6 +7,7 @@ import 'package:intl/intl.dart';
 import 'package:file_picker/file_picker.dart';
 import '../../../main.dart';
 import '../../auth/screens/login_screen.dart';
+import '../../../core/services/auth_service.dart';
 
 class AddLogScreen extends StatefulWidget {
   final String pembimbingNama;
@@ -30,7 +31,7 @@ class _AddLogScreenState extends State<AddLogScreen> {
   bool _isLoading = false;
 
   // Base URL backend
-  final String _baseUrl = 'http://localhost:8000';
+  final String _baseUrl = 'https://sitamanext.informatikapolines.id';
 
   @override
   void initState() {
@@ -87,8 +88,7 @@ class _AddLogScreenState extends State<AddLogScreen> {
         return;
       }
 
-      final url = Uri.parse('$_baseUrl/api/log-bimbingan');
-      var request = http.MultipartRequest('POST', url);
+      var request = http.MultipartRequest('POST', Uri.parse('$_baseUrl/api/log-bimbingan'));
 
       // --- Fields ---
       request.fields['judul'] = _judulController.text.trim();
@@ -110,6 +110,7 @@ class _AddLogScreenState extends State<AddLogScreen> {
       request.headers['Accept'] = 'application/json';
 
       final response = await request.send();
+      final responseString = await response.stream.bytesToString();
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -119,8 +120,7 @@ class _AddLogScreenState extends State<AddLogScreen> {
       } else if (response.statusCode == 401) {
         _forceLogout();
       } else {
-        final resStr = await response.stream.bytesToString();
-        throw Exception("Gagal: ${response.statusCode} - $resStr");
+        throw Exception("Gagal: ${response.statusCode} - $responseString");
       }
     } catch (e) {
       debugPrint("Error: $e");
@@ -131,12 +131,8 @@ class _AddLogScreenState extends State<AddLogScreen> {
   }
 
   void _forceLogout() {
-    storageService.deleteToken();
-    Navigator.pushAndRemoveUntil(
-      context,
-      MaterialPageRoute(builder: (_) => const LoginScreen()),
-      (route) => false,
-    );
+    // Gunakan service auth untuk logout
+    AuthService.instance.logout(context);
   }
 
   @override

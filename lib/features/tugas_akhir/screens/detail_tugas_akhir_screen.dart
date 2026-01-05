@@ -1,11 +1,10 @@
 import 'package:flutter/material.dart';
+import '../../../main.dart'; // Untuk akses storageService
 import '../../../core/services/api_service.dart';
 import 'daftar_tugas_akhir_screen.dart';
 
 class DetailTugasAkhirScreen extends StatefulWidget {
-  final String token;
-
-  const DetailTugasAkhirScreen({super.key, required this.token});
+  const DetailTugasAkhirScreen({super.key});
 
   @override
   State<DetailTugasAkhirScreen> createState() => _DetailTugasAkhirScreenState();
@@ -24,7 +23,11 @@ class _DetailTugasAkhirScreenState extends State<DetailTugasAkhirScreen> {
 
   Future<void> _loadThesisDetail() async {
     try {
-      final response = await ApiService.getThesis(widget.token);
+      String? token = await storageService.getToken();
+      if (token == null) {
+        throw Exception('Token tidak ditemukan. Silakan login ulang.');
+      }
+      final response = await ApiService.getThesis(token);
       if (response['status'] == 'success') {
         if (response['data'] != null) {
           setState(() {

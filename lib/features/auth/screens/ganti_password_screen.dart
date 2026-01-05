@@ -4,6 +4,7 @@ import 'package:http/http.dart' as http;
 import '../../../core/services/api_service.dart';
 import '../../../main.dart'; // Untuk akses storageService
 import 'login_screen.dart';
+import '../../../core/services/auth_service.dart';
 
 class GantiPasswordScreen extends StatefulWidget {
   const GantiPasswordScreen({Key? key}) : super(key: key);
@@ -24,34 +25,15 @@ class _GantiPasswordScreenState extends State<GantiPasswordScreen> {
 
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
-    
+
     setState(() {
       _isLoading = true;
       _errorMessage = null;
     });
 
-    // Ambil token dari storage
-    final token = await storageService.getToken();
-    
-    // Jika token tidak ada, redirect ke login
-    if (token == null || token.isEmpty) {
-      setState(() {
-        _isLoading = false;
-        _errorMessage = 'Sesi Anda telah berakhir. Silakan login kembali.';
-      });
-      // Redirect ke login setelah 2 detik
-      Future.delayed(const Duration(seconds: 2), () {
-        if (mounted) {
-          Navigator.of(context).pushAndRemoveUntil(
-            MaterialPageRoute(builder: (_) => const LoginScreen()),
-            (route) => false,
-          );
-        }
-      });
-      return;
-    }
-
     try {
+      final token = await storageService.getToken();
+
       final response = await http.post(
         Uri.parse(ApiService.gantiPasswordUrl),
         headers: {
@@ -63,22 +45,9 @@ class _GantiPasswordScreenState extends State<GantiPasswordScreen> {
           'password_baru_confirmation': _confirmController.text,
         }),
       ).timeout(const Duration(seconds: 10));
-      
+
       if (response.statusCode == 200) {
         setState(() => _success = true);
-      } else if (response.statusCode == 401) {
-        // Token tidak valid atau expired
-        setState(() => _errorMessage = 'Sesi Anda telah berakhir. Silakan login kembali.');
-        // Hapus token dan redirect ke login
-        await storageService.clearAll();
-        Future.delayed(const Duration(seconds: 2), () {
-          if (mounted) {
-            Navigator.of(context).pushAndRemoveUntil(
-              MaterialPageRoute(builder: (_) => const LoginScreen()),
-              (route) => false,
-            );
-          }
-        });
       } else {
         final body = jsonDecode(response.body);
         setState(() => _errorMessage = body['message'] ?? 'Gagal mengubah password');

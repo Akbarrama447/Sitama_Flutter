@@ -160,16 +160,34 @@ class _PersyaratanSidangScreenState extends State<PersyaratanSidangScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // Header Nama (Tanpa Debug)
+            // Header dengan tombol kembali dan nama
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
-              alignment: Alignment.centerRight,
-              child: const Text(
-                "Suko Tyas",
-                style: TextStyle(
-                    color: SidangColors.headerTextBlue,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  // Tombol kembali
+                  InkWell(
+                    onTap: () {
+                      Navigator.of(context).pop();
+                    },
+                    child: const Icon(
+                      Icons.arrow_back,
+                      color: SidangColors.headerTextBlue,
+                      size: 24,
+                    ),
+                  ),
+                  // Nama
+                  const Text(
+                    "Suko Tyas",
+                    style: TextStyle(
+                        color: SidangColors.headerTextBlue,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16),
+                  ),
+                  // Spacer untuk menjaga keseimbangan layout
+                  const SizedBox(width: 24), // Lebar sesuai dengan ikon
+                ],
               ),
             ),
 
@@ -345,4 +363,4 @@ class _PersyaratanSidangScreenState extends State<PersyaratanSidangScreen> {
     );
   }
 }
-  
+

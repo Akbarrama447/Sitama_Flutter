@@ -9,6 +9,7 @@ import 'add_log_screen.dart';
 import 'edit_log_screen.dart';
 import 'detail_bimbingan_dialog.dart';
 import 'file_preview_screen.dart';
+import '../../../core/services/auth_service.dart';
 
 class TugasAkhirTab extends StatefulWidget {
   const TugasAkhirTab({super.key});
@@ -18,7 +19,7 @@ class TugasAkhirTab extends StatefulWidget {
 }
 
 class _TugasAkhirTabState extends State<TugasAkhirTab> {
-  final String _baseUrl = 'http://localhost:8000';
+  final String _baseUrl = 'https://sitamanext.informatikapolines.id';
   final int _targetBimbingan = 8;
 
   late Future<void> _initFuture;
@@ -49,40 +50,54 @@ class _TugasAkhirTabState extends State<TugasAkhirTab> {
   }
 
   Future<void> _fetchPembimbing() async {
-    final token = await storageService.getToken();
-    if (token == null) return _forceLogout();
+    try {
+      final token = await storageService.getToken();
+      if (token == null) return _forceLogout();
 
-    final url = '$_baseUrl/api/pembimbing';
-    final res = await http.get(Uri.parse(url), headers: {
-      'Authorization': 'Bearer $token',
-      'Accept': 'application/json',
-    });
+      final url = '$_baseUrl/api/pembimbing';
+      final res = await http.get(
+        Uri.parse(url),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Accept': 'application/json',
+        },
+      );
 
-    if (res.statusCode == 200) {
-      final list = jsonDecode(res.body) as List<dynamic>;
-      setState(() {
-        _pembimbingList = list.map((e) => Map<String, dynamic>.from(e)).toList();
-      });
-    } else if (res.statusCode == 401) {
-      _forceLogout();
+      if (res.statusCode == 200) {
+        final list = jsonDecode(res.body) as List<dynamic>;
+        setState(() {
+          _pembimbingList = list.map((e) => Map<String, dynamic>.from(e)).toList();
+        });
+      } else if (res.statusCode == 401) {
+        _forceLogout();
+      }
+    } catch (e) {
+      debugPrint('Error fetching pembimbing: $e');
     }
   }
 
   Future<void> _fetchLogsForUrutan(dynamic urutan) async {
-    final token = await storageService.getToken();
-    if (token == null) return _forceLogout();
+    try {
+      final token = await storageService.getToken();
+      if (token == null) return _forceLogout();
 
-    final url = '$_baseUrl/api/log-bimbingan?urutan=$urutan';
-    final res = await http.get(Uri.parse(url), headers: {
-      'Authorization': 'Bearer $token',
-      'Accept': 'application/json',
-    });
+      final url = '$_baseUrl/api/log-bimbingan?urutan=$urutan';
+      final res = await http.get(
+        Uri.parse(url),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Accept': 'application/json',
+        },
+      );
 
-    if (res.statusCode == 200) {
-      final list = jsonDecode(res.body) as List<dynamic>;
-      setState(() => _logsPerPembimbing[urutan] = list);
-    } else if (res.statusCode == 401) {
-      _forceLogout();
+      if (res.statusCode == 200) {
+        final list = jsonDecode(res.body) as List<dynamic>;
+        setState(() => _logsPerPembimbing[urutan] = list);
+      } else if (res.statusCode == 401) {
+        _forceLogout();
+      }
+    } catch (e) {
+      debugPrint('Error fetching logs: $e');
     }
   }
 
@@ -91,13 +106,8 @@ class _TugasAkhirTabState extends State<TugasAkhirTab> {
   }
 
   void _forceLogout() {
-    storageService.deleteToken();
-    if (!mounted) return;
-
-    Navigator.of(context, rootNavigator: true).pushAndRemoveUntil(
-      MaterialPageRoute(builder: (context) => const LoginScreen()),
-      (route) => false,
-    );
+    // Gunakan service auth untuk logout
+    AuthService.instance.logout(context);
   }
 
   void _goPrevious() {

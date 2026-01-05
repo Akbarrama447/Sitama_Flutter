@@ -7,6 +7,7 @@ import 'package:intl/intl.dart';
 import 'package:file_picker/file_picker.dart';
 import '../../../main.dart'; // storageService
 import '../../auth/screens/login_screen.dart';
+import '../../../core/services/auth_service.dart';
 
 class EditLogScreen extends StatefulWidget {
   final Map<String, dynamic> log;
@@ -24,7 +25,7 @@ class _EditLogScreenState extends State<EditLogScreen> {
   PlatformFile? _pickedPlatformFile;
   late String _fileName; // nama file backend (tidak null)
   bool _isLoading = false;
-  final String _baseUrl = 'http://localhost:8000';
+  final String _baseUrl = 'https://sitamanext.informatikapolines.id';
 
   @override
   void initState() {
@@ -196,12 +197,7 @@ class _EditLogScreenState extends State<EditLogScreen> {
 
 
   void _forceLogout() {
-    storageService.deleteToken();
-    Navigator.pushAndRemoveUntil(
-      context,
-      MaterialPageRoute(builder: (_) => const LoginScreen()),
-      (route) => false,
-    );
+    AuthService.instance.logout(context);
   }
 
   @override

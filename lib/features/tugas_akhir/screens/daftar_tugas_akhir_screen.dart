@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../../../main.dart'; // Untuk akses storageService
 import '../../../core/services/api_service.dart';
 import 'detail_tugas_akhir_screen.dart';
 
@@ -17,7 +18,6 @@ class _DaftarTugasAkhirScreenState extends State<DaftarTugasAkhirScreen> {
   bool _checkingThesisStatus =
       true; // Menandai apakah sedang memeriksa status tugas akhir
   bool _hasThesis = false; // Menandai apakah user sudah memiliki tugas akhir
-  String? _token; // Menyimpan token untuk digunakan saat navigasi
 
   // Daftar mahasiswa
   final List<Map<String, String>> _daftarMahasiswa = [
@@ -43,39 +43,11 @@ class _DaftarTugasAkhirScreenState extends State<DaftarTugasAkhirScreen> {
 
   // Fungsi untuk memeriksa status tugas akhir user
   Future<void> _checkThesisStatus() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    String? token = prefs.getString('token');
-
-    if (token == null) {
-      // Coba beberapa kemungkinan key token
-      token = prefs.getString('access_token') ??
-          prefs.getString('bearer_token') ??
-          prefs.getString('auth_token');
-    }
-
-    if (token == null) {
-      if (mounted) {
-        setState(() {
-          _checkingThesisStatus = false;
-        });
-
-        // Tampilkan pesan bahwa user perlu login
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text("Anda belum login. Silakan login terlebih dahulu."),
-            backgroundColor: Colors.orange,
-          ),
-        );
-      }
-      return;
-    }
-
-    // Simpan token untuk digunakan saat navigasi ke detail
-    setState(() {
-      _token = token;
-    });
-
     try {
+      String? token = await storageService.getToken();
+      if (token == null) {
+        throw Exception('Token tidak ditemukan. Silakan login ulang.');
+      }
       final response = await ApiService.getThesis(token);
       if (response['status'] == 'success') {
         // Jika respons sukses, periksa apakah data null atau tidak
@@ -206,32 +178,11 @@ class _DaftarTugasAkhirScreenState extends State<DaftarTugasAkhirScreen> {
       print('Member NIMs: $memberNims'); // Debug log
       print('Total members: ${memberNims.length}'); // Debug log
 
-      // Ambil token dari shared preferences
-      SharedPreferences prefs = await SharedPreferences.getInstance();
-      String? token = prefs.getString('token');
+      // Ambil token dari storage
+      String? token = await storageService.getToken();
 
       if (token == null) {
-        // Coba beberapa kemungkinan key token
-        token = prefs.getString('access_token') ??
-            prefs.getString('bearer_token') ??
-            prefs.getString('auth_token');
-      }
-
-      if (token == null) {
-        if (mounted) {
-          setState(() {
-            _isLoading = false;
-          });
-
-          // Tampilkan pesan bahwa user perlu login
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text("Anda belum login. Silakan login terlebih dahulu."),
-              backgroundColor: Colors.orange,
-            ),
-          );
-        }
-        return;
+        throw Exception('Token tidak ditemukan. Silakan login ulang.');
       }
 
       // Panggil API untuk membuat tugas akhir
@@ -279,7 +230,7 @@ class _DaftarTugasAkhirScreenState extends State<DaftarTugasAkhirScreen> {
           errorMessage =
               'Tidak dapat terhubung ke server. Periksa koneksi internet.';
         } else if (e.toString().contains('401')) {
-          errorMessage = 'Token tidak valid. Silakan login kembali.';
+          errorMessage = 'Sesi Anda telah berakhir. Silakan login kembali.';
         } else if (e.toString().contains('403')) {
           errorMessage = 'Akses ditolak. Silakan coba lagi.';
         } else if (e.toString().contains('422')) {
@@ -335,12 +286,12 @@ class _DaftarTugasAkhirScreenState extends State<DaftarTugasAkhirScreen> {
     // Jika user sudah memiliki tugas akhir, navigasi ke detail tugas akhir
     if (_hasThesis) {
       // Navigasi ke detail tugas akhir
-      if (_token != null && mounted) {
+      if (mounted) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(
-              builder: (context) => DetailTugasAkhirScreen(token: _token!),
+              builder: (context) => const DetailTugasAkhirScreen(),
             ),
           );
         });
@@ -379,7 +330,7 @@ class _DaftarTugasAkhirScreenState extends State<DaftarTugasAkhirScreen> {
                 alignment: Alignment.centerRight,
                 padding: const EdgeInsets.only(right: 16),
                 child: const Text(
-                  'Suko Tyas',
+                  'Mahasiswa',
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
@@ -424,7 +375,7 @@ class _DaftarTugasAkhirScreenState extends State<DaftarTugasAkhirScreen> {
             top: 40.0,
             right: 16.0,
             child: const Text(
-              'Suko Tyas',
+              'Mahasiswa',
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w600,

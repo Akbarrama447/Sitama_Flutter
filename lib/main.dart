@@ -14,9 +14,9 @@ void main() async {
   // Pastikan semua widget siap sebelum app jalan
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Inisialisasi localization untuk format tanggal
+
   await initializeDateFormatting('id_ID', null);
-  
+
   // Inisialisasi service penyimpanan
   final prefs = await SharedPreferences.getInstance();
   storageService = StorageService(prefs);
