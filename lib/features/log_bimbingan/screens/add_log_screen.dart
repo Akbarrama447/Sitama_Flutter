@@ -6,6 +6,7 @@ import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
 import 'package:file_picker/file_picker.dart';
 import '../../../main.dart';
+import '../../../core/services/api_service.dart'; // Import ApiService
 import '../../auth/screens/login_screen.dart';
 import '../../../widgets/modern_back_button.dart';
 
@@ -28,7 +29,6 @@ class _AddLogScreenState extends State<AddLogScreen> {
 
   bool _isLoading = false;
 
-  final String _baseUrl = 'http://localhost:8000';
 
   Future<void> _selectDate(BuildContext context) async {
     final DateTime? picked = await showDatePicker(
@@ -84,9 +84,7 @@ class _AddLogScreenState extends State<AddLogScreen> {
         return;
       }
 
-      final url = Uri.parse('$_baseUrl/api/log-bimbingan');
-
-      var request = http.MultipartRequest('POST', url);
+      var request = http.MultipartRequest('POST', Uri.parse('${ApiService.baseUrl}/log-bimbingan'));
 
       // field biasa
       request.fields['judul'] = _judulController.text.trim();

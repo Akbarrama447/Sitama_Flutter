@@ -5,7 +5,7 @@ import 'package:intl/date_symbol_data_local.dart';
 import 'features/auth/screens/login_screen.dart';
 import 'features/dashboard/screens/dashboard_screen.dart';
 import 'core/services/storage_service.dart'; // Import service kita
-
+import 'widgets/splash_screen.dart';
 // PENTING: Buat instance storage service secara global agar gampang diakses
 // Kita akan inisialisasi di main()
 late StorageService storageService;
@@ -33,13 +33,14 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Tentukan tema warna utama
+
     final ColorScheme kColorScheme = ColorScheme.fromSeed(
       seedColor: const Color(0xFF1565C0), // Biru tua (sesuai desain)
     );
 
     return MaterialApp(
       title: 'Aplikasi Mahasiswa',
+      home: const SplashScreen(),
       debugShowCheckedModeBanner: false,
       localizationsDelegates: const [
         GlobalMaterialLocalizations.delegate,
@@ -91,7 +92,11 @@ class MyApp extends StatelessWidget {
       // --- Logika Navigasi Awal ---
       // Jika token ada (tidak null), langsung ke Dashboard
       // Jika token null, ke Halaman Login
-      home: token != null ? const DashboardScreen() : const LoginScreen(),
+      
+     routes: {
+    '/login': (context) => const LoginScreen(),
+    '/dashboard': (context) => const DashboardScreen(), // Pastikan nama routenya sesuai
+  },
     );
   }
 }

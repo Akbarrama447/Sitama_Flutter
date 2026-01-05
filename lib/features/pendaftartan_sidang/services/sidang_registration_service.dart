@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../../../main.dart'; // untuk mengakses storageService
+import '../../../core/services/api_service.dart'; // Import ApiService
 
 class SidangRegistrationService {
   // Fungsi untuk mendaftarkan sidang
@@ -51,7 +52,7 @@ class SidangRegistrationService {
       }
 
       final response = await http.post(
-        Uri.parse('http://localhost:8000/api/pendaftaran-sidang'),
+        Uri.parse('${ApiService.baseUrl}/pendaftaran-sidang'),
         headers: {
           'Authorization': 'Bearer $token',
           'Accept': 'application/json',

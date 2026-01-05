@@ -4,6 +4,7 @@ import 'package:http/http.dart' as http;
 import 'package:table_calendar/table_calendar.dart';
 
 import '../../../main.dart';
+import '../../../core/services/api_service.dart'; // Import ApiService
 import '../../../widgets/schedule_detail_dialog.dart';
 import '../../auth/screens/login_screen.dart';
 import '../../tugas_akhir/screens/daftar_tugas_akhir_screen.dart';
@@ -25,13 +26,12 @@ class _HomeTabState extends State<HomeTab> {
   DateTime? _selectedDay;
   FilterType _activeFilter = FilterType.none;
   String _searchQuery = '';
+  String _userName = 'User'; // Add the user name variable
   late Future<List<dynamic>> _jadwalFuture;
-  final String _baseUrl = 'http://localhost:8000';
-  String _userName = 'User';
 
   // --- LOGIKA CONSTRAINT BIMBINGAN ---
   // Inisialisasi awal false agar tidak error "Null is not subtype of bool"
-  bool _canRegisterSidang = false; 
+  bool _canRegisterSidang = false;
   String _sidangMessage = "Jumlah bimbingan belum mencukupi.";
 
   @override
@@ -128,11 +128,13 @@ class _HomeTabState extends State<HomeTab> {
       if (token == null) return _forceLogout();
 
       // 2. Ambil Profil dari API
-      final url = Uri.parse('$_baseUrl/api/user');
-      final response = await http.get(url, headers: {
-        'Authorization': 'Bearer $token',
-        'Accept': 'application/json',
-      });
+      final response = await http.get(
+        Uri.parse('${ApiService.baseUrl}/user'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Accept': 'application/json',
+        },
+      );
 
       if (response.statusCode == 200) {
         final userData = jsonDecode(response.body);
@@ -144,11 +146,13 @@ class _HomeTabState extends State<HomeTab> {
 
       // 3. CEK KELAYAKAN SIDANG (PENTING!)
       // Mengambil data bimbingan dari backend berdasarkan min_bimbingan di configs
-      final eligibilityUrl = Uri.parse('$_baseUrl/api/check-sidang-eligibility');
-      final resEligible = await http.get(eligibilityUrl, headers: {
-        'Authorization': 'Bearer $token',
-        'Accept': 'application/json',
-      });
+      final resEligible = await http.get(
+        Uri.parse('${ApiService.baseUrl}/check-sidang-eligibility'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Accept': 'application/json',
+        },
+      );
 
       if (resEligible.statusCode == 200) {
         final data = jsonDecode(resEligible.body);
@@ -172,11 +176,11 @@ class _HomeTabState extends State<HomeTab> {
 
     final formattedDate =
         '${tanggal.year}-${tanggal.month.toString().padLeft(2, '0')}-${tanggal.day.toString().padLeft(2, '0')}';
-    final url = Uri.parse('$_baseUrl/api/jadwal-sidang?tanggal=$formattedDate');
 
     try {
       final response =
-          await http.get(url, headers: {'Authorization': 'Bearer $token', 'Accept': 'application/json'});
+          await http.get(Uri.parse('${ApiService.baseUrl}/jadwal-sidang?tanggal=$formattedDate'),
+          headers: {'Authorization': 'Bearer $token', 'Accept': 'application/json'});
 
       if (response.statusCode == 200) {
         return jsonDecode(response.body) as List<dynamic>;

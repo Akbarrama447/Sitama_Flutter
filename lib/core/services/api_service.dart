@@ -3,7 +3,6 @@ import 'package:http/http.dart' as http;
 
 class ApiService {
   // --- KONFIGURASI HOST ---
-  // localhost -> Browser | 10.0.2.2 -> Emulator | IP WiFi -> HP Asli
   static const String apiHost = 'https://sitamanext.informatikapolines.id';
   static const String baseUrl = '$apiHost/api';
 

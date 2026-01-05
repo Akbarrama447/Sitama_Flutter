@@ -7,7 +7,6 @@ import '../../../main.dart'; // untuk mengakses storageService
 import '../../../core/services/api_service.dart';
 
 class DocumentUploadService {
-  static const String baseUrl = 'http://localhost:8000'; // Sesuaikan dengan API kamu
 
   // Tambahkan flag untuk menentukan apakah menggunakan API atau tidak
   static bool useApi = false; // Set ke false untuk menggunakan mode lokal sementara
@@ -44,7 +43,7 @@ class DocumentUploadService {
 
       var request = http.MultipartRequest(
         'POST',
-        Uri.parse('$baseUrl/api/upload-dokumen'),
+        Uri.parse('${ApiService.baseUrl}/upload-dokumen'),
       );
 
       // Tambahkan header
@@ -76,7 +75,7 @@ class DocumentUploadService {
         };
       }
 
-      print('Memulai request ke: $baseUrl/api/upload-dokumen'); // Debug log
+      print('Memulai request ke: ${ApiService.baseUrl}/upload-dokumen'); // Debug log
       print('Headers: ${request.headers}'); // Debug log
       print('Fields: ${request.fields}'); // Debug log
       print('Files: ${request.files.length} files'); // Debug log
@@ -256,7 +255,7 @@ class DocumentUploadService {
 
       var request = http.MultipartRequest(
         'POST',
-        Uri.parse('$baseUrl/api/upload-dokumen'),
+        Uri.parse('${ApiService.baseUrl}/upload-dokumen'),
       );
 
       // Tambahkan header
@@ -275,7 +274,7 @@ class DocumentUploadService {
       // Tambahkan dokumen_id ke request (ini yang benar sesuai API)
       request.fields['dokumen_id'] = documentId.toString();
 
-      print('Memulai request ke: $baseUrl/api/upload-dokumen'); // Debug log
+      print('Memulai request ke: ${ApiService.baseUrl}/upload-dokumen'); // Debug log
       print('Headers: ${request.headers}'); // Debug log
       print('Fields: ${request.fields}'); // Debug log
       print('Files: ${request.files.length} files'); // Debug log

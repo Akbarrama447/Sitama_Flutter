@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../../../main.dart'; // untuk mengakses storageService
+import '../../../core/services/api_service.dart'; // Import ApiService
 
 class DocumentListService {
   // Fungsi untuk mengambil daftar dokumen yang sudah diupload dari API
@@ -13,7 +14,7 @@ class DocumentListService {
       }
 
       final response = await http.get(
-        Uri.parse('http://localhost:8000/api/my-uploaded-documents'),
+        Uri.parse('${ApiService.baseUrl}/my-uploaded-documents'),
         headers: {
           'Authorization': 'Bearer $token',
           'Accept': 'application/json',

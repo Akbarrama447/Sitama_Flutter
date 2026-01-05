@@ -67,6 +67,7 @@ flutter:
     - assets/logo.png
     - assets/google.png
     - assets/sitama.png
+    - assets/logo_sitama_animasi.gif
     
 
   # To add custom fonts to your application, add a fonts section here,

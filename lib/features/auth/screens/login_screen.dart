@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'dart:convert';
 import '../../../main.dart'; // Untuk akses storageService
 import '../../../core/services/api_service.dart';
+import '../../../widgets/splash_screen.dart';
 import '../../dashboard/screens/dashboard_screen.dart';
 import 'ganti_password_screen.dart';
 
@@ -49,10 +50,10 @@ class _LoginScreenState extends State<LoginScreen> {
         await storageService.saveUserName(userData['name']);
       }
 
-      // --- REDIRECT OTOMATIS KE DASHBOARD ---
+      // --- REDIRECT TO SPLASH SCREEN FIRST, THEN TO DASHBOARD ---
       if (mounted) {
         Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (context) => const DashboardScreen()),
+          MaterialPageRoute(builder: (context) => const SplashScreen()),
         );
       }
     } catch (e) {

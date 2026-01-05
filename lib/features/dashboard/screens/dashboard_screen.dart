@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import '../../../main.dart'; // Untuk akses storageService
+import '../../../core/services/api_service.dart'; // Import ApiService
 import '../../auth/screens/login_screen.dart'; // Untuk halaman login
 
 // --- IMPORT TAB KITA ---
@@ -19,7 +20,6 @@ class DashboardScreen extends StatefulWidget {
 class _DashboardScreenState extends State<DashboardScreen> {
   int _selectedIndex = 0; // Halaman yang sedang aktif
   String _userName = 'Mahasiswa';
-  final String _baseUrl = 'http://localhost:8000';
 
   @override
   void initState() {
@@ -32,11 +32,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
       final token = await storageService.getToken();
       if (token == null) return _logout();
 
-      final url = Uri.parse('$_baseUrl/api/user');
-      final response = await http.get(url, headers: {
-        'Authorization': 'Bearer $token',
-        'Accept': 'application/json',
-      });
+      final response = await http.get(
+        Uri.parse('${ApiService.baseUrl}/user'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Accept': 'application/json',
+        },
+      );
 
       if (response.statusCode == 200) {
         final userData = jsonDecode(response.body);

@@ -4,6 +4,7 @@ import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart'; // Untuk format tanggal
 
 import '../../../main.dart'; // Untuk storageService
+import '../../../core/services/api_service.dart'; // Import ApiService
 import '../../auth/screens/login_screen.dart';
 import 'add_log_screen.dart';
 
@@ -16,8 +17,6 @@ class TugasAkhirTab extends StatefulWidget {
 
 class _TugasAkhirTabState extends State<TugasAkhirTab> {
   late Future<List<dynamic>> _logsFuture;
-  // Sesuaikan IP backend lo
-  final String _baseUrl = 'http://localhost:8000';
 
   // Target bimbingan (misal minimal 8 kali)
   final int _targetBimbingan = 8;
@@ -38,10 +37,9 @@ class _TugasAkhirTabState extends State<TugasAkhirTab> {
         _forceLogout();
         return [];
       }
-      final url = '$_baseUrl/api/log-bimbingan';
-      debugPrint('DEBUG: Fetching logs from $url');
+      debugPrint('DEBUG: Fetching logs from ${ApiService.baseUrl}/log-bimbingan');
       final response = await http.get(
-        Uri.parse(url),
+        Uri.parse('${ApiService.baseUrl}/log-bimbingan'),
         headers: {
           'Authorization': 'Bearer $token',
           'Accept': 'application/json',

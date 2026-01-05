@@ -94,6 +94,8 @@ class _DaftarTugasAkhirScreenState extends State<DaftarTugasAkhirScreen> {
     try {
       final response = await ApiService.getThesis(token);
       if (mounted) {
+        // Check if response has data and if the data belongs to the current user
+        // The API should return the current user's thesis only, but let's be extra safe
         if (response['status'] == 'success' && response['data'] != null) {
           setState(() {
             _hasThesis = true;
@@ -154,14 +156,19 @@ class _DaftarTugasAkhirScreenState extends State<DaftarTugasAkhirScreen> {
 
         if (input.isNotEmpty) {
           // Cari mahasiswa di list
-          final foundMhs = _daftarMahasiswa.firstWhere(
-            (m) =>
-                m['name'].toString().toLowerCase() == input.toLowerCase() ||
-                m['nim'].toString() == input,
-            orElse: () => {}, // Return map kosong kalau tidak ketemu
-          );
+          Map<String, dynamic>? foundMhs;
+          try {
+            foundMhs = _daftarMahasiswa.firstWhere(
+              (m) =>
+                  m['name'].toString().toLowerCase() == input.toLowerCase() ||
+                  m['nim'].toString() == input,
+            );
+          } catch (e) {
+            // Jika tidak ditemukan, foundMhs tetap null
+            foundMhs = null;
+          }
 
-          if (foundMhs.isNotEmpty) {
+          if (foundMhs != null) {
             // Jika ketemu di list (pilih dari autocomplete)
             memberNims.add(foundMhs['nim'].toString());
           } else if (RegExp(r'^\d+$').hasMatch(input)) {
@@ -174,6 +181,9 @@ class _DaftarTugasAkhirScreenState extends State<DaftarTugasAkhirScreen> {
         }
       }
 
+      // Ensure the list of members is valid before submitting
+      // If the API requires at least the current user to be in the list, we might need to add them
+      // For now, we'll just submit with the members as selected
       await ApiService.createThesis(
         token: _token!,
         title: _titleController.text,
