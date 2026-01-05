@@ -7,6 +7,7 @@ import 'pendaftaran_sidang_page.dart';
 import '../services/document_upload_service.dart';
 import '../services/document_list_service.dart';
 import '../../../core/services/upload_status_manager.dart';
+import '../../../widgets/modern_back_button.dart';
 
 class PersyaratanSidangScreen extends StatefulWidget {
   const PersyaratanSidangScreen({super.key});
@@ -156,193 +157,186 @@ class _PersyaratanSidangScreenState extends State<PersyaratanSidangScreen> {
     }
 
     return Scaffold(
-      body: SafeArea(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            // Header Nama (Tanpa Debug)
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
-              alignment: Alignment.centerRight,
-              child: const Text(
-                "Suko Tyas",
-                style: TextStyle(
-                    color: SidangColors.headerTextBlue,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16),
-              ),
-            ),
+      body: Stack(
+        children: [
+          SafeArea(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
 
-            // Banner Gradient
-            Container(
-              height: 60,
-              decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [Color(0xFFE3F2FD), Colors.white],
-                ),
-              ),
-            ),
-
-            // MAIN CARD
-            Expanded(
-              child: Container(
-                margin: const EdgeInsets.fromLTRB(16, 0, 16, 20),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(15),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.grey.withOpacity(0.15),
-                      spreadRadius: 2,
-                      blurRadius: 10,
-                      offset: const Offset(0, 4),
+                // Banner Gradient
+                Container(
+                  height: 60,
+                  decoration: const BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [Color(0xFFE3F2FD), Colors.white],
                     ),
-                  ],
-                ),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(15),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Container(
-                          height: 5,
-                          width: double.infinity,
-                          color: SidangColors.cardTopBorderBlue),
-
-                      const Padding(
-                        padding: EdgeInsets.fromLTRB(20, 20, 20, 10),
-                        child: Text(
-                          'Persyaratan Sidang',
-                          style: TextStyle(
-                              fontSize: 22,
-                              fontWeight: FontWeight.bold,
-                              color: SidangColors.headerTextBlue),
-                        ),
-                      ),
-
-                      const Divider(height: 1, color: Color(0xFFEEEEEE)),
-
-                      // LIST DOKUMEN (Dengan ScrollController Fix)
-                      Expanded(
-                        child: Scrollbar(
-                          controller: ScrollController(),
-                          thumbVisibility: true,
-                          radius: const Radius.circular(10),
-                          child: ListView.builder(
-                            controller: ScrollController(),
-                            padding: const EdgeInsets.all(20),
-                            itemCount: documents.length,
-                            itemBuilder: (context, index) {
-                              if (documents.isEmpty) {
-                                return const SizedBox.shrink(); // Jangan tampilkan apapun jika list kosong
-                              }
-                              return Padding(
-                                padding: const EdgeInsets.only(bottom: 15.0),
-                                child: DocumentItemWidget(
-                                    item: documents[index],
-                                    onDocumentUpdate: () {
-                                      // Refresh UI setelah dokumen diupdate
-                                      setState(() {});
-                                      // Cek apakah semua dokumen sudah verified dan simpan statusnya
-                                      _checkAndUpdateUploadStatus();
-                                      // Simpan status semua dokumen
-                                      _saveDocumentsStatus();
-                                    }),
-                              );
-                            },
-                          ),
-                        ),
-                      ),
-
-                      // TOMBOL ACTION
-                      Padding(
-                        padding: const EdgeInsets.all(20),
-                        child: Row(
-                          children: [
-                            Expanded(
-                              child: SizedBox(
-                                height: 40,
-                                child: ElevatedButton(
-                                  onPressed: () {
-                                    // Update semua dokumen menjadi verified
-                                    setState(() {
-                                      for (var doc in documents) {
-                                        if (doc.status != DocumentStatus.verified) {
-                                          doc.status = DocumentStatus.verified;
-                                        }
-                                      }
-                                    });
-
-                                    // Cek apakah semua dokumen sudah verified dan simpan statusnya
-                                    _checkAndUpdateUploadStatus();
-                                    // Simpan status semua dokumen
-                                    _saveDocumentsStatus();
-                                  },
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: SidangColors.primaryBtnBlue,
-                                    foregroundColor: Colors.white,
-                                    shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(6)),
-                                    elevation: 0,
-                                  ),
-                                  child: const Text('Simpan',
-                                      style: TextStyle(
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 14)),
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 15),
-
-                            // TOMBOL DAFTAR SIDANG
-                            Expanded(
-                              child: SizedBox(
-                                height: 40,
-                                child: ElevatedButton(
-                                  onPressed: isRegistrationEnabled
-                                      ? () {
-                                          Navigator.push(
-                                            context,
-                                            MaterialPageRoute(
-                                                builder: (context) =>
-                                                    const PendaftaranSidangPage()),
-                                          );
-                                        }
-                                      : null,
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor:
-                                        isRegistrationEnabled
-                                            ? SidangColors.primaryBtnBlue
-                                            : SidangColors.secondaryBtnGray,
-                                    foregroundColor: Colors.white,
-                                    disabledBackgroundColor: SidangColors.secondaryBtnGray,
-                                    disabledForegroundColor: Colors.white,
-                                    shape: RoundedRectangleBorder(
-                                        borderRadius:
-                                            BorderRadius.circular(6)),
-                                    elevation: 0,
-                                  ),
-                                  child: const Text('Daftar Sidang',
-                                      style: TextStyle(
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 14)),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
                   ),
                 ),
-              ),
+
+                // MAIN CARD
+                Expanded(
+                  child: Container(
+                    margin: const EdgeInsets.fromLTRB(16, 0, 16, 20),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(15),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.grey.withOpacity(0.15),
+                          spreadRadius: 2,
+                          blurRadius: 10,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(15),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Container(
+                              height: 5,
+                              width: double.infinity,
+                              color: SidangColors.cardTopBorderBlue),
+
+                          const Padding(
+                            padding: EdgeInsets.fromLTRB(20, 20, 20, 10),
+                            child: Text(
+                              'Persyaratan Sidang',
+                              style: TextStyle(
+                                  fontSize: 22,
+                                  fontWeight: FontWeight.bold,
+                                  color: SidangColors.headerTextBlue),
+                            ),
+                          ),
+
+                          const Divider(height: 1, color: Color(0xFFEEEEEE)),
+
+                          // LIST DOKUMEN (Dengan ScrollController Fix)
+                          Expanded(
+                            child: Scrollbar(
+                              controller: ScrollController(),
+                              thumbVisibility: true,
+                              radius: const Radius.circular(10),
+                              child: ListView.builder(
+                                controller: ScrollController(),
+                                padding: const EdgeInsets.all(20),
+                                itemCount: documents.length,
+                                itemBuilder: (context, index) {
+                                  if (documents.isEmpty) {
+                                    return const SizedBox.shrink(); // Jangan tampilkan apapun jika list kosong
+                                  }
+                                  return Padding(
+                                    padding: const EdgeInsets.only(bottom: 15.0),
+                                    child: DocumentItemWidget(
+                                        item: documents[index],
+                                        onDocumentUpdate: () {
+                                          // Refresh UI setelah dokumen diupdate
+                                          setState(() {});
+                                          // Cek apakah semua dokumen sudah verified dan simpan statusnya
+                                          _checkAndUpdateUploadStatus();
+                                          // Simpan status semua dokumen
+                                          _saveDocumentsStatus();
+                                        }),
+                                  );
+                                },
+                              ),
+                            ),
+                          ),
+
+                          // TOMBOL ACTION
+                          Padding(
+                            padding: const EdgeInsets.all(20),
+                            child: Row(
+                              children: [
+                                Expanded(
+                                  child: SizedBox(
+                                    height: 40,
+                                    child: ElevatedButton(
+                                      onPressed: () {
+                                        // Update semua dokumen menjadi verified
+                                        setState(() {
+                                          for (var doc in documents) {
+                                            if (doc.status != DocumentStatus.verified) {
+                                              doc.status = DocumentStatus.verified;
+                                            }
+                                          }
+                                        });
+
+                                        // Cek apakah semua dokumen sudah verified dan simpan statusnya
+                                        _checkAndUpdateUploadStatus();
+                                        // Simpan status semua dokumen
+                                        _saveDocumentsStatus();
+                                      },
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: SidangColors.primaryBtnBlue,
+                                        foregroundColor: Colors.white,
+                                        shape: RoundedRectangleBorder(
+                                            borderRadius: BorderRadius.circular(6)),
+                                        elevation: 0,
+                                      ),
+                                      child: const Text('Simpan',
+                                          style: TextStyle(
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 14)),
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 15),
+
+                                // TOMBOL DAFTAR SIDANG
+                                Expanded(
+                                  child: SizedBox(
+                                    height: 40,
+                                    child: ElevatedButton(
+                                      onPressed: isRegistrationEnabled
+                                          ? () {
+                                              Navigator.push(
+                                                context,
+                                                MaterialPageRoute(
+                                                    builder: (context) =>
+                                                        const PendaftaranSidangPage()),
+                                              );
+                                            }
+                                          : null,
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor:
+                                            isRegistrationEnabled
+                                                ? SidangColors.primaryBtnBlue
+                                                : SidangColors.secondaryBtnGray,
+                                        foregroundColor: Colors.white,
+                                        disabledBackgroundColor: SidangColors.secondaryBtnGray,
+                                        disabledForegroundColor: Colors.white,
+                                        shape: RoundedRectangleBorder(
+                                            borderRadius:
+                                                BorderRadius.circular(6)),
+                                        elevation: 0,
+                                      ),
+                                      child: const Text('Daftar Sidang',
+                                          style: TextStyle(
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 14)),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
-          ],
-        ),
+          ),
+          ModernBackButton(),
+        ],
       ),
     );
   }
 }
-  
+

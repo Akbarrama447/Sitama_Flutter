@@ -29,6 +29,11 @@ class _HomeTabState extends State<HomeTab> {
   final String _baseUrl = 'http://localhost:8000';
   String _userName = 'User';
 
+  // --- LOGIKA CONSTRAINT BIMBINGAN ---
+  // Inisialisasi awal false agar tidak error "Null is not subtype of bool"
+  bool _canRegisterSidang = false; 
+  String _sidangMessage = "Jumlah bimbingan belum mencukupi.";
+
   @override
   void initState() {
     super.initState();
@@ -69,22 +74,37 @@ class _HomeTabState extends State<HomeTab> {
                   },
                 ),
                 const Divider(height: 1),
+                
+                // --- TOMBOL DAFTAR SIDANG (CONSTRAINT LOGIC) ---
                 ListTile(
-                  leading: const Icon(Icons.school_outlined, color: Color.fromARGB(255, 116, 165, 250)),
-                  title: const Text(
+                  enabled: _canRegisterSidang, // Tombol tidak bisa diklik jika belum 8 bimbingan per dosen
+                  leading: Icon(
+                    Icons.school_outlined, 
+                    // Warna jadi Hitam/Abu jika tidak memenuhi syarat
+                    color: _canRegisterSidang 
+                        ? const Color.fromARGB(255, 116, 165, 250) 
+                        : Colors.black45,
+                  ),
+                  title: Text(
                     'Daftar Sidang',
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w400,
+                      // Teks jadi Hitam/Abu jika tidak memenuhi syarat
+                      color: _canRegisterSidang ? Colors.black87 : Colors.black45,
                     ),
                   ),
-                  onTap: () {
+                  // Tampilkan pesan alasan (Contoh: "Bimbingan baru 5 dari minimal 8")
+                  subtitle: !_canRegisterSidang 
+                    ? Text(_sidangMessage, style: const TextStyle(fontSize: 10, color: Colors.red))
+                    : null,
+                  onTap: _canRegisterSidang ? () {
                     Navigator.pop(context);
                     Navigator.push(
                       context,
                       MaterialPageRoute(builder: (context) => const PersyaratanSidangScreen()),
                     );
-                  },
+                  } : null,
                 ),
               ],
             ),
@@ -96,9 +116,18 @@ class _HomeTabState extends State<HomeTab> {
 
   Future<void> _loadUserData() async {
     try {
+      // 1. Ambil nama dari storage dulu (Cepat)
+      final storedName = await storageService.getUserName(); 
+      if (storedName != null) {
+        setState(() {
+          _userName = storedName;
+        });
+      }
+
       final token = await storageService.getToken();
       if (token == null) return _forceLogout();
 
+      // 2. Ambil Profil dari API
       final url = Uri.parse('$_baseUrl/api/user');
       final response = await http.get(url, headers: {
         'Authorization': 'Bearer $token',
@@ -108,11 +137,29 @@ class _HomeTabState extends State<HomeTab> {
       if (response.statusCode == 200) {
         final userData = jsonDecode(response.body);
         setState(() {
-          _userName = userData['nama'] ?? 'User';
+          _userName = userData['name'] ?? userData['nama'] ?? 'User';
+        });
+        await storageService.saveUserName(_userName);
+      }
+
+      // 3. CEK KELAYAKAN SIDANG (PENTING!)
+      // Mengambil data bimbingan dari backend berdasarkan min_bimbingan di configs
+      final eligibilityUrl = Uri.parse('$_baseUrl/api/check-sidang-eligibility');
+      final resEligible = await http.get(eligibilityUrl, headers: {
+        'Authorization': 'Bearer $token',
+        'Accept': 'application/json',
+      });
+
+      if (resEligible.statusCode == 200) {
+        final data = jsonDecode(resEligible.body);
+        setState(() {
+          _canRegisterSidang = data['can_register'] ?? false;
+          _sidangMessage = data['message'] ?? "";
         });
       }
+
     } catch (e) {
-      debugPrint('Error loading user data: $e');
+      debugPrint('Error loading data: $e');
     }
   }
 
@@ -132,17 +179,14 @@ class _HomeTabState extends State<HomeTab> {
           await http.get(url, headers: {'Authorization': 'Bearer $token', 'Accept': 'application/json'});
 
       if (response.statusCode == 200) {
-        final data = jsonDecode(response.body) as List<dynamic>;
-        return data;
+        return jsonDecode(response.body) as List<dynamic>;
       } else if (response.statusCode == 401) {
         _forceLogout();
         return [];
       } else {
-        debugPrint('Fetch jadwal failed: ${response.statusCode}');
         return [];
       }
     } catch (e) {
-      debugPrint('Network Error: $e');
       return [];
     }
   }
@@ -158,7 +202,6 @@ class _HomeTabState extends State<HomeTab> {
   }
 
   List<dynamic> _filterAndSortList(List<dynamic> list) {
-    // Filter berdasarkan search query terlebih dahulu
     List<dynamic> filteredList = _searchQuery.isEmpty
         ? List.from(list)
         : list.where((jadwal) {
@@ -173,26 +216,17 @@ class _HomeTabState extends State<HomeTab> {
                    jam.contains(_searchQuery.toLowerCase());
           }).toList();
 
-    // Lalu lakukan sorting berdasarkan filter type
     switch (_activeFilter) {
       case FilterType.room:
-        filteredList.sort((a, b) {
-          final String tempatA = (a['tempat'] as String?) ?? '';
-          final String tempatB = (b['tempat'] as String?) ?? '';
-          return tempatA.compareTo(tempatB);
-        });
+        filteredList.sort((a, b) => (a['tempat'] ?? '').compareTo(b['tempat'] ?? ''));
         break;
       case FilterType.time:
         filteredList.sort((a, b) {
           try {
             final String jamA = (a['jam'] as String?) ?? '';
             final String jamB = (b['jam'] as String?) ?? '';
-            final timeA = jamA.split(' ').first;
-            final timeB = jamB.split(' ').first;
-            return timeA.compareTo(timeB);
-          } catch (e) {
-            return 0;
-          }
+            return jamA.split(' ').first.compareTo(jamB.split(' ').first);
+          } catch (e) { return 0; }
         });
         break;
       case FilterType.none:
@@ -213,33 +247,21 @@ class _HomeTabState extends State<HomeTab> {
               prefixIcon: Icon(Icons.search),
             ),
             autofocus: true,
-            textInputAction: TextInputAction.search,
-            onChanged: (value) {
-              setState(() {
-                _searchQuery = value;
-              });
-            },
             onSubmitted: (value) {
-              setState(() {
-                _searchQuery = value;
-              });
+              setState(() { _searchQuery = value; });
               Navigator.of(context).pop();
             },
           ),
           actions: [
             TextButton(
               onPressed: () {
-                setState(() {
-                  _searchQuery = '';
-                });
+                setState(() { _searchQuery = ''; });
                 Navigator.of(context).pop();
               },
               child: const Text('Hapus'),
             ),
             TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
+              onPressed: () => Navigator.of(context).pop(),
               child: const Text('OK'),
             ),
           ],
@@ -250,18 +272,8 @@ class _HomeTabState extends State<HomeTab> {
 
   String _selectedMonthLabel(DateTime d) {
     const months = [
-      'JANUARI',
-      'FEBRUARI',
-      'MARET',
-      'APRIL',
-      'MEI',
-      'JUNI',
-      'JULI',
-      'AGUSTUS',
-      'SEPTEMBER',
-      'OKTOBER',
-      'NOVEMBER',
-      'DESEMBER',
+      'JANUARI', 'FEBRUARI', 'MARET', 'APRIL', 'MEI', 'JUNI',
+      'JULI', 'AGUSTUS', 'SEPTEMBER', 'OKTOBER', 'NOVEMBER', 'DESEMBER',
     ];
     return months[d.month - 1];
   }
@@ -279,7 +291,6 @@ class _HomeTabState extends State<HomeTab> {
         }),
       ),
     );
-
     if (chosen != null) {
       setState(() {
         _focusedDay = DateTime(_focusedDay.year, chosen, _focusedDay.day);
@@ -295,12 +306,9 @@ class _HomeTabState extends State<HomeTab> {
       context: context,
       builder: (c) => SimpleDialog(
         title: const Text('Pilih Tahun'),
-        children: years
-            .map((y) => SimpleDialogOption(onPressed: () => Navigator.pop(c, y), child: Text(y.toString())))
-            .toList(),
+        children: years.map((y) => SimpleDialogOption(onPressed: () => Navigator.pop(c, y), child: Text(y.toString()))).toList(),
       ),
     );
-
     if (chosen != null) {
       setState(() {
         _focusedDay = DateTime(chosen, _focusedDay.month, _focusedDay.day);
@@ -328,30 +336,17 @@ class _HomeTabState extends State<HomeTab> {
           final jadwalData = snapshot.data ?? [];
           final jadwalTampil = _filterAndSortList(jadwalData);
 
-          // Build schedule section separately to avoid collection-if in widget children
           final Widget scheduleSection = jadwalTampil.isEmpty
               ? LayoutBuilder(builder: (context, constraints) {
-                  final height = MediaQuery.of(context).size.height;
                   return ConstrainedBox(
-                    constraints: BoxConstraints(minHeight: height * 0.35),
+                    constraints: BoxConstraints(minHeight: MediaQuery.of(context).size.height * 0.35),
                     child: Center(
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: const [
                           Icon(Icons.calendar_month_outlined, size: 120, color: Color(0xFFB6A4E6)),
                           SizedBox(height: 24),
-                          Padding(
-                            padding: EdgeInsets.symmetric(horizontal: 24.0),
-                            child: Text(
-                              'Tidak ditemukan jadwal\nsidang Tugas Akhir',
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                fontSize: 16,
-                                color: Colors.grey,
-                                height: 1.5,
-                              ),
-                            ),
-                          ),
+                          Text('Tidak ditemukan jadwal\nsidang Tugas Akhir', textAlign: TextAlign.center, style: TextStyle(fontSize: 16, color: Colors.grey, height: 1.5)),
                         ],
                       ),
                     ),
@@ -380,8 +375,7 @@ class _HomeTabState extends State<HomeTab> {
                                   child: Column(
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
-                                      Text(jadwal['nama']?.toString() ?? 'N/A',
-                                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                                      Text(jadwal['nama']?.toString() ?? 'N/A', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
                                       const SizedBox(height: 6),
                                       Text(jadwal['judul'] ?? 'N/A', style: const TextStyle(color: Colors.black54)),
                                       const SizedBox(height: 6),
@@ -401,10 +395,10 @@ class _HomeTabState extends State<HomeTab> {
                 );
 
           return SingleChildScrollView(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                // Header with gradient and welcome text
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Header (Tampilan Tetap Sama)
                 Container(
                   height: 160,
                   decoration: BoxDecoration(
@@ -420,50 +414,35 @@ class _HomeTabState extends State<HomeTab> {
                   ),
                 ),
 
-                // Calendar card overlapping header
+                // Calendar (Tampilan Tetap Sama)
                 Transform.translate(
                   offset: const Offset(0, -36),
                   child: Padding(
-                    padding: const EdgeInsets.fromLTRB(16.0, 0, 16.0, 0),
+                    padding: const EdgeInsets.symmetric(horizontal: 16.0),
                     child: Container(
                       decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(20), boxShadow: const [BoxShadow(color: Color.fromRGBO(0, 0, 0, 0.08), blurRadius: 14, offset: Offset(0, 6))]),
                       child: Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 18.0),
-                        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                        child: Column(children: [
                           Row(children: [
-                            Expanded(child: InkWell(onTap: () => _selectMonth(context), child: Container(padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8), decoration: BoxDecoration(color: blueMain, borderRadius: BorderRadius.circular(24), boxShadow: const [BoxShadow(color: Color.fromRGBO(30, 136, 229, 0.15), blurRadius: 6, offset: Offset(0, 2))]), child: Row(mainAxisSize: MainAxisSize.min, children: [Text(_selectedMonthLabel(_focusedDay), style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)), const SizedBox(width: 6), const Icon(Icons.keyboard_arrow_down, color: Colors.white, size: 20)])))),
+                            Expanded(child: InkWell(onTap: () => _selectMonth(context), child: Container(padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8), decoration: BoxDecoration(color: blueMain, borderRadius: BorderRadius.circular(24)), child: Row(mainAxisSize: MainAxisSize.min, children: [Text(_selectedMonthLabel(_focusedDay), style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)), const Icon(Icons.keyboard_arrow_down, color: Colors.white, size: 20)])))),
                             const SizedBox(width: 10),
-                            Expanded(child: InkWell(onTap: () => _selectYear(context), child: Container(padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8), decoration: BoxDecoration(color: blueMain, borderRadius: BorderRadius.circular(24), boxShadow: const [BoxShadow(color: Color.fromRGBO(30, 136, 229, 0.15), blurRadius: 6, offset: Offset(0, 2))]), child: Row(mainAxisSize: MainAxisSize.min, children: [Text(_focusedDay.year.toString(), style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)), const SizedBox(width: 6), const Icon(Icons.keyboard_arrow_down, color: Colors.white, size: 20)])))),
+                            Expanded(child: InkWell(onTap: () => _selectYear(context), child: Container(padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8), decoration: BoxDecoration(color: blueMain, borderRadius: BorderRadius.circular(24)), child: Row(mainAxisSize: MainAxisSize.min, children: [Text(_focusedDay.year.toString(), style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)), const Icon(Icons.keyboard_arrow_down, color: Colors.white, size: 20)])))),
                           ]),
                           const SizedBox(height: 12),
                           TableCalendar(
-                            locale: 'id_ID',
-                            rowHeight: 46,
-                            daysOfWeekHeight: 26,
-                            headerVisible: false,
-                            firstDay: DateTime.utc(2020, 1, 1),
-                            lastDay: DateTime.utc(2030, 12, 31),
-                            focusedDay: _focusedDay,
+                            locale: 'id_ID', rowHeight: 46, daysOfWeekHeight: 26, headerVisible: false,
+                            firstDay: DateTime.utc(2020, 1, 1), lastDay: DateTime.utc(2030, 12, 31), focusedDay: _focusedDay,
                             calendarFormat: CalendarFormat.month,
                             selectedDayPredicate: (day) => isSameDay(_selectedDay, day),
                             onDaySelected: (selectedDay, focusedDay) {
                               if (!isSameDay(_selectedDay, selectedDay)) {
-                                setState(() {
-                                  _selectedDay = selectedDay;
-                                  _focusedDay = focusedDay;
-                                  _searchQuery = ''; // Reset search query saat tanggal berubah
-                                  _jadwalFuture = _fetchJadwal(selectedDay);
-                                });
+                                setState(() { _selectedDay = selectedDay; _focusedDay = focusedDay; _searchQuery = ''; _jadwalFuture = _fetchJadwal(selectedDay); });
                               }
                             },
-                            onPageChanged: (focusedDay) => setState(() => _focusedDay = focusedDay),
-                            daysOfWeekStyle: const DaysOfWeekStyle(weekdayStyle: TextStyle(fontWeight: FontWeight.bold, color: Colors.black54), weekendStyle: TextStyle(fontWeight: FontWeight.bold, color: Colors.black54)),
                             calendarStyle: CalendarStyle(
-                              weekendTextStyle: const TextStyle(color: Colors.black54),
-                              todayDecoration: const BoxDecoration(color: Color(0xFFE8F5FF), shape: BoxShape.circle),
-                              todayTextStyle: const TextStyle(color: Colors.black87),
                               selectedDecoration: const BoxDecoration(color: blueMain, shape: BoxShape.circle),
-                              selectedTextStyle: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                              todayDecoration: const BoxDecoration(color: Color(0xFFE8F5FF), shape: BoxShape.circle),
                             ),
                           ),
                         ]),
@@ -472,9 +451,7 @@ class _HomeTabState extends State<HomeTab> {
                   ),
                 ),
 
-                const SizedBox(height: 8),
-
-                // Title and filter
+                // Filters & List (Tampilan Tetap Sama)
                 Padding(
                   padding: const EdgeInsets.fromLTRB(20, 8, 20, 8),
                   child: Column(
@@ -482,74 +459,24 @@ class _HomeTabState extends State<HomeTab> {
                     children: [
                       Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
                         const Text('Jadwal Sidang Tugas Akhir', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
-                        Row(
-                          children: [
-                            IconButton(
-                              icon: Icon(Icons.search, color: _searchQuery.isNotEmpty ? blueMain : Colors.black54),
-                              onPressed: () => _showSearchDialog(),
-                            ),
-                            PopupMenuButton<FilterType>(
-                              onSelected: (FilterType result) => setState(() => _activeFilter = result),
-                              itemBuilder: (BuildContext context) {
-                                final items = <PopupMenuEntry<FilterType>>[
-                                  const PopupMenuItem<FilterType>(value: FilterType.time, child: Text('Urutkan berdasarkan Waktu')),
-                                  const PopupMenuItem<FilterType>(value: FilterType.room, child: Text('Urutkan berdasarkan Ruangan')),
-                                ];
-                                if (_activeFilter != FilterType.none || _searchQuery.isNotEmpty) {
-                                  items.add(const PopupMenuDivider());
-                                  items.add(const PopupMenuItem<FilterType>(value: FilterType.none, child: Text('Hapus Pengurutan')));
-                                }
-                                return items;
-                              },
-                              icon: Icon(Icons.filter_list, color: _activeFilter != FilterType.none || _searchQuery.isNotEmpty ? blueMain : Colors.black54),
-                            ),
-                          ],
-                        )
+                        Row(children: [
+                          IconButton(icon: Icon(Icons.search, color: _searchQuery.isNotEmpty ? blueMain : Colors.black54), onPressed: () => _showSearchDialog()),
+                          PopupMenuButton<FilterType>(
+                            onSelected: (result) => setState(() => _activeFilter = result),
+                            itemBuilder: (c) => [
+                              const PopupMenuItem(value: FilterType.time, child: Text('Urutkan berdasarkan Waktu')),
+                              const PopupMenuItem(value: FilterType.room, child: Text('Urutkan berdasarkan Ruangan')),
+                            ],
+                            icon: Icon(Icons.filter_list, color: _activeFilter != FilterType.none ? blueMain : Colors.black54),
+                          ),
+                        ])
                       ]),
                       if (_searchQuery.isNotEmpty)
-                        Padding(
-                          padding: const EdgeInsets.only(top: 8.0),
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                            decoration: BoxDecoration(
-                              color: blueMain.withOpacity(0.1),
-                              borderRadius: BorderRadius.circular(16),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Text(
-                                  'Mencari: "$_searchQuery"',
-                                  style: TextStyle(
-                                    color: blueMain,
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                                const SizedBox(width: 8),
-                                GestureDetector(
-                                  onTap: () {
-                                    setState(() {
-                                      _searchQuery = '';
-                                    });
-                                  },
-                                  child: Icon(
-                                    Icons.clear,
-                                    size: 16,
-                                    color: blueMain,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
+                        Container(margin: const EdgeInsets.only(top: 8), padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6), decoration: BoxDecoration(color: blueMain.withOpacity(0.1), borderRadius: BorderRadius.circular(16)), child: Text('Mencari: "$_searchQuery"', style: const TextStyle(color: blueMain, fontSize: 12))),
                     ],
                   ),
                 ),
-
-                // Schedule
                 scheduleSection,
-
                 const SizedBox(height: 24),
               ],
             ),

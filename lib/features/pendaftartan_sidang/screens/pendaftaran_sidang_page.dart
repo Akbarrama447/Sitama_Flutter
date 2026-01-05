@@ -4,6 +4,7 @@ import 'revisi_page.dart';
 import '../services/sidang_registration_service.dart';
 import '../services/document_list_service.dart';
 import '../models/document_model.dart';
+import '../../../widgets/modern_back_button.dart';
 
 class PendaftaranSidangPage extends StatefulWidget {
   const PendaftaranSidangPage({super.key});
@@ -434,133 +435,128 @@ class _PendaftaranSidangPageState extends State<PendaftaranSidangPage> {
 
     return Scaffold(
       backgroundColor: Colors.white,
-      body: SafeArea(
-        child: Column(
-          children: [
-            Container(
-              color: Colors.white,
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
-              child: const Align(
-                  alignment: Alignment.centerRight,
-                  child: Text('Suko Tyas',
-                      style: TextStyle(
-                          color: SidangColors.headerTextBlue,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 14))),
-            ),
-            const Divider(height: 1, thickness: 1, color: Color(0xFFEEEEEE)),
-            Expanded(
-              child: Stack(
-                children: [
-                  Positioned(
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    height: 250,
-                    child: Container(
-                      decoration: const BoxDecoration(
-                        gradient: LinearGradient(
-                            begin: Alignment.topCenter,
-                            end: Alignment.bottomCenter,
-                            colors: [Color(0xFFE3F2FD), Colors.white]),
-                      ),
-                    ),
-                  ),
-                  SingleChildScrollView(
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 16.0, vertical: 20.0),
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(8),
-                          boxShadow: [
-                            BoxShadow(
-                                color: Colors.black.withOpacity(0.1),
-                                spreadRadius: 1,
-                                blurRadius: 5,
-                                offset: const Offset(0, 2))
-                          ],
-                        ),
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(8),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Container(
-                                  width: double.infinity,
-                                  height: 4,
-                                  color: SidangColors.cardTopBorderBlue),
-                              const Padding(
-                                  padding: EdgeInsets.fromLTRB(20, 20, 20, 15),
-                                  child: Text('Pendaftaran Sidang',
-                                      style: TextStyle(
-                                          fontSize: 18,
-                                          fontWeight: FontWeight.bold,
-                                          color: Color(0xFF37474F)))),
-                              const Divider(
-                                  height: 1, thickness: 1, color: Color(0xFFEEEEEE)),
-                              Padding(
-                                padding: const EdgeInsets.all(20.0),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    _buildLabel(
-                                        label: 'Judul Final Tugas Akhir',
-                                        isRequired: true),
-                                    const SizedBox(height: 8),
-                                    _buildTextField(
-                                        controller: _judulController,
-                                        hintText:
-                                            'Masukan Judul Final Tugas Akhir'),
-                                    const SizedBox(height: 20),
-                                    _buildLabel(
-                                        label: 'Pilih Jadwal Sidang',
-                                        isRequired: false),
-                                    const SizedBox(height: 8),
-                                    _buildDropdown(),
-                                    const SizedBox(height: 20),
-                                  ],
-                                ),
-                              ),
-                              const SizedBox(height: 10),
-                              const Divider(
-                                  height: 1, thickness: 1, color: Color(0xFFEEEEEE)),
-                              Padding(
-                                padding:
-                                    const EdgeInsets.symmetric(vertical: 25.0),
-                                child: Center(
-                                  child: SizedBox(
-                                    width: 150,
-                                    height: 40,
-                                    child: ElevatedButton(
-                                      onPressed: _showKonfirmasiDialog,
-                                      style: ElevatedButton.styleFrom(
-                                          backgroundColor: SidangColors.buttonBlue,
-                                          foregroundColor: Colors.white,
-                                          elevation: 0,
-                                          shape: RoundedRectangleBorder(
-                                              borderRadius:
-                                                  BorderRadius.circular(6))),
-                                      child: const Text('Daftar Sidang',
-                                          style: TextStyle(
-                                              fontWeight: FontWeight.w600,
-                                              fontSize: 13)),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ],
+      body: Stack(
+        children: [
+          SafeArea(
+            child: Column(
+              children: [
+               
+                const Divider(height: 1, thickness: 1, color: Color(0xFFEEEEEE)),
+                Expanded(
+                  child: Stack(
+                    children: [
+                      Positioned(
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        height: 250,
+                        child: Container(
+                          decoration: const BoxDecoration(
+                            gradient: LinearGradient(
+                                begin: Alignment.topCenter,
+                                end: Alignment.bottomCenter,
+                                colors: [Color(0xFFE3F2FD), Colors.white]),
                           ),
                         ),
                       ),
-                    ),
+                      SingleChildScrollView(
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 16.0, vertical: 20.0),
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(8),
+                              boxShadow: [
+                                BoxShadow(
+                                    color: Colors.black.withOpacity(0.1),
+                                    spreadRadius: 1,
+                                    blurRadius: 5,
+                                    offset: const Offset(0, 2))
+                              ],
+                            ),
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(8),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Container(
+                                      width: double.infinity,
+                                      height: 4,
+                                      color: SidangColors.cardTopBorderBlue),
+                                  const Padding(
+                                      padding: EdgeInsets.fromLTRB(20, 20, 20, 15),
+                                      child: Text('Pendaftaran Sidang',
+                                          style: TextStyle(
+                                              fontSize: 18,
+                                              fontWeight: FontWeight.bold,
+                                              color: Color(0xFF37474F)))),
+                                  const Divider(
+                                      height: 1, thickness: 1, color: Color(0xFFEEEEEE)),
+                                  Padding(
+                                    padding: const EdgeInsets.all(20.0),
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        _buildLabel(
+                                            label: 'Judul Final Tugas Akhir',
+                                            isRequired: true),
+                                        const SizedBox(height: 8),
+                                        _buildTextField(
+                                            controller: _judulController,
+                                            hintText:
+                                                'Masukan Judul Final Tugas Akhir'),
+                                        const SizedBox(height: 20),
+                                        _buildLabel(
+                                            label: 'Pilih Jadwal Sidang',
+                                            isRequired: false),
+                                        const SizedBox(height: 8),
+                                        _buildDropdown(),
+                                        const SizedBox(height: 20),
+                                      ],
+                                    ),
+                                  ),
+                                  const SizedBox(height: 10),
+                                  const Divider(
+                                      height: 1, thickness: 1, color: Color(0xFFEEEEEE)),
+                                  Padding(
+                                    padding:
+                                        const EdgeInsets.symmetric(vertical: 25.0),
+                                    child: Center(
+                                      child: SizedBox(
+                                        width: 150,
+                                        height: 40,
+                                        child: ElevatedButton(
+                                          onPressed: _showKonfirmasiDialog,
+                                          style: ElevatedButton.styleFrom(
+                                              backgroundColor: SidangColors.buttonBlue,
+                                              foregroundColor: Colors.white,
+                                              elevation: 0,
+                                              shape: RoundedRectangleBorder(
+                                                  borderRadius:
+                                                      BorderRadius.circular(6))),
+                                          child: const Text('Daftar Sidang',
+                                              style: TextStyle(
+                                                  fontWeight: FontWeight.w600,
+                                                  fontSize: 13)),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
-          ],
-        ),
+          ),
+          ModernBackButton(),
+        ],
       ),
     );
   }

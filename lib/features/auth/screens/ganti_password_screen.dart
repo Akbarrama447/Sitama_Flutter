@@ -4,6 +4,7 @@ import 'package:http/http.dart' as http;
 import '../../../core/services/api_service.dart';
 import '../../../main.dart'; // Untuk akses storageService
 import 'login_screen.dart';
+import '../../../widgets/modern_back_button.dart';
 
 class GantiPasswordScreen extends StatefulWidget {
   const GantiPasswordScreen({Key? key}) : super(key: key);
@@ -24,7 +25,7 @@ class _GantiPasswordScreenState extends State<GantiPasswordScreen> {
 
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
-    
+
     setState(() {
       _isLoading = true;
       _errorMessage = null;
@@ -32,7 +33,7 @@ class _GantiPasswordScreenState extends State<GantiPasswordScreen> {
 
     // Ambil token dari storage
     final token = await storageService.getToken();
-    
+
     // Jika token tidak ada, redirect ke login
     if (token == null || token.isEmpty) {
       setState(() {
@@ -63,7 +64,7 @@ class _GantiPasswordScreenState extends State<GantiPasswordScreen> {
           'password_baru_confirmation': _confirmController.text,
         }),
       ).timeout(const Duration(seconds: 10));
-      
+
       if (response.statusCode == 200) {
         setState(() => _success = true);
       } else if (response.statusCode == 401) {
@@ -94,25 +95,30 @@ class _GantiPasswordScreenState extends State<GantiPasswordScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9FD),
-      body: Center(
-        child: SingleChildScrollView(
-          child: Container(
-            width: 370,
-            padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 24),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.07),
-                  blurRadius: 16,
-                  offset: const Offset(0, 4),
+      body: Stack(
+        children: [
+          Center(
+            child: SingleChildScrollView(
+              child: Container(
+                width: 370,
+                padding: const EdgeInsets.only(top: 80, bottom: 32, left: 24, right: 24),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.07),
+                      blurRadius: 16,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
                 ),
-              ],
+                child: _success ? _buildSuccess() : _buildForm(),
+              ),
             ),
-            child: _success ? _buildSuccess() : _buildForm(),
           ),
-        ),
+          ModernBackButton(),
+        ],
       ),
     );
   }

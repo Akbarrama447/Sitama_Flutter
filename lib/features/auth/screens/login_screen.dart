@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
 import 'dart:convert';
 import '../../../main.dart'; // Untuk akses storageService
 import '../../../core/services/api_service.dart';
@@ -21,9 +20,8 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _isPasswordVisible = false;
   bool _rememberMe = false;
 
-  // Fungsi login (LOGIKA INI MASIH SAMA)
+  // --- LOGIKA LOGIN YANG SUDAH DIPERBAIKI ---
   Future<void> _login() async {
-    // Validasi form
     if (!_formKey.currentState!.validate()) {
       return;
     }
@@ -33,43 +31,34 @@ class _LoginScreenState extends State<LoginScreen> {
     });
 
     try {
-      final url = Uri.parse(ApiService.loginUrl);
-      final response = await http.post(
-        url,
-        headers: {'Accept': 'application/json'},
-        body: {
-          'email': _emailController.text,
-          'password': _passwordController.text,
-        },
-      ).timeout(const Duration(seconds: 10));
+      // Memanggil ApiService yang sudah diperbaiki sebelumnya
+      final responseBody = await ApiService.login(
+        _emailController.text,
+        _passwordController.text,
+      );
 
-      final responseBody = json.decode(response.body);
+      // Ambil data dari response (Sesuai JSON Laravel kamu)
+      final token = responseBody['token']; // Pakai access_token, bukan token
+      final userData = responseBody['user'];
 
-      if (response.statusCode == 200 && responseBody['token'] != null) {
-        // --- SUKSES LOGIN ---
-        final token = responseBody['token'];
-          final userData = responseBody['user'];
-        
-          // Simpan token dan nama user ke storage
-          await storageService.saveToken(token);
-          if (userData != null && userData['nama'] != null) {
-            await storageService.saveUserName(userData['nama']);
-          }
+      // Simpan ke storage
+      await storageService.saveToken(token);
+      
+      if (userData != null && userData['name'] != null) {
+        // Pakai 'name', sesuai JSON: "name": "Wika Dwi Aprilia"
+        await storageService.saveUserName(userData['name']);
+      }
 
-        // Pindah ke Dashboard
-        if (mounted) {
-          Navigator.of(context).pushReplacement(
-            MaterialPageRoute(builder: (context) => const DashboardScreen()),
-          );
-        }
-      } else {
-        // --- GAGAL LOGIN ---
-        final message = responseBody['message'] ?? 'Login gagal. Cek email/password.';
-        _showErrorDialog(message);
+      // --- REDIRECT OTOMATIS KE DASHBOARD ---
+      if (mounted) {
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (context) => const DashboardScreen()),
+        );
       }
     } catch (e) {
-      // --- ERROR KONEKSI/TIMEOUT ---
-      _showErrorDialog('Gagal terhubung ke server. Cek koneksi internet Anda.');
+      // Menangkap error dari ApiService (401, 500, atau koneksi)
+      String errorMessage = e.toString().replaceAll('Exception: ', '');
+      _showErrorDialog(errorMessage);
     } finally {
       if (mounted) {
         setState(() {
@@ -133,25 +122,16 @@ class _LoginScreenState extends State<LoginScreen> {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    // Logo Polines
+                    
                     Image.asset(
-                      'assets/logo.png',
-                      height: 120,
-                      width: 120,
+                      'assets/sitama.png',
+                      height: 180,
+                      width: 180,
                       fit: BoxFit.contain,
                     ),
-                    const SizedBox(height: 24),
-                    // Judul "SITAMA"
-                    Text(
-                      'SITAMA',
-                      style: TextStyle(
-                        fontSize: 36,
-                        fontWeight: FontWeight.bold,
-                        color: theme.colorScheme.primary,
-                        letterSpacing: 1.5,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
+                    
+                    const SizedBox(height: 0),
+                  
                     Text(
                       'Sistem Informasi Tugas Akhir Mahasiswa',
                       style: TextStyle(
@@ -163,7 +143,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     SizedBox(height: size.height * 0.05),
 
                     const SizedBox(height: 32),
-                    // Form Email dengan styling baru
+                    // Form Email
                     TextFormField(
                       controller: _emailController,
                       decoration: _buildInputDecoration(
@@ -183,7 +163,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                     const SizedBox(height: 16),
 
-                    // Form Password dengan styling baru
+                    // Form Password
                     TextFormField(
                       controller: _passwordController,
                       obscureText: !_isPasswordVisible,
@@ -214,7 +194,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                     const SizedBox(height: 16),
 
-                    // --- Baris "Ingat Saya" & "Lupa Password" ---
+                    // Baris "Ingat Saya" & "Lupa Password"
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
@@ -245,7 +225,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                     const SizedBox(height: 24),
 
-                    // Tombol Login dengan styling baru
+                    // Tombol Login
                     const SizedBox(height: 8),
                     _isLoading
                         ? const Center(child: CircularProgressIndicator())
@@ -256,7 +236,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             child: ElevatedButton(
                               onPressed: _login,
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: Color.fromARGB(255, 116, 165, 250),
+                                backgroundColor: const Color.fromARGB(255, 116, 165, 250),
                                 foregroundColor: Colors.white,
                                 elevation: 0,
                                 shape: RoundedRectangleBorder(
@@ -314,4 +294,3 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 }
-

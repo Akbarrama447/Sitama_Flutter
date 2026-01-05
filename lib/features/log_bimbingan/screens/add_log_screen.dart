@@ -7,6 +7,7 @@ import 'package:intl/intl.dart';
 import 'package:file_picker/file_picker.dart';
 import '../../../main.dart';
 import '../../auth/screens/login_screen.dart';
+import '../../../widgets/modern_back_button.dart';
 
 class AddLogScreen extends StatefulWidget {
   const AddLogScreen({super.key});
@@ -140,108 +141,104 @@ class _AddLogScreenState extends State<AddLogScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text(
-          'Tambah Log Bimbingan',
-          style: TextStyle(
-            color: Colors.white,
+      backgroundColor: Colors.grey[50],
+      body: Stack(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Form(
+              key: _formKey,
+              child: ListView(
+                children: [
+                  // JUDUL
+                  TextFormField(
+                    controller: _judulController,
+                    decoration: const InputDecoration(
+                      labelText: 'Judul Bimbingan',
+                      border: OutlineInputBorder(),
+                    ),
+                    validator: (value) =>
+                        value!.isEmpty ? 'Judul tidak boleh kosong' : null,
+                  ),
+                  const SizedBox(height: 16),
+
+                  // NIP DOSEN PEMBIMBING
+                  TextFormField(
+                    controller: _dosenNipController,
+                    decoration: const InputDecoration(
+                      labelText: 'NIP Dosen Pembimbing',
+                      border: OutlineInputBorder(),
+                    ),
+                    validator: (value) =>
+                        value!.isEmpty ? 'NIP dosen wajib diisi' : null,
+                  ),
+                  const SizedBox(height: 16),
+
+                  // DESKRIPSI
+                  TextFormField(
+                    controller: _deskripsiController,
+                    decoration: const InputDecoration(
+                      labelText: 'Deskripsi',
+                      border: OutlineInputBorder(),
+                    ),
+                    maxLines: 4,
+                    validator: (value) =>
+                        value!.isEmpty ? 'Deskripsi tidak boleh kosong' : null,
+                  ),
+                  const SizedBox(height: 16),
+
+                  // JADWAL
+                  InkWell(
+                    onTap: () => _selectDate(context),
+                    child: InputDecorator(
+                      decoration: const InputDecoration(
+                        labelText: 'Jadwal Bimbingan',
+                        border: OutlineInputBorder(),
+                      ),
+                      child: Text(
+                        _selectedDate == null
+                            ? 'Pilih tanggal'
+                            : DateFormat('EEEE, d MMMM yyyy', 'id_ID')
+                                .format(_selectedDate!),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+
+                  // FILE UPLOAD
+                  ElevatedButton.icon(
+                    onPressed: _pickFile,
+                    icon: const Icon(Icons.upload_file),
+                    label: Text(
+                      _pickedPlatformFile == null ? "Upload File" : "File dipilih ✔️",
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.grey[200],
+                      foregroundColor: Colors.black,
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+
+                  // SIMPAN
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: _isLoading ? null : _submitLog,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF03A9F4),
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                      ),
+                      child: _isLoading
+                          ? const CircularProgressIndicator(color: Colors.white)
+                          : const Text('Simpan'),
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ),
-        ),
-        backgroundColor: const Color(0xFF03A9F4),
-        iconTheme: const IconThemeData(color: Colors.white),
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Form(
-          key: _formKey,
-          child: ListView(
-            children: [
-              // JUDUL
-              TextFormField(
-                controller: _judulController,
-                decoration: const InputDecoration(
-                  labelText: 'Judul Bimbingan',
-                  border: OutlineInputBorder(),
-                ),
-                validator: (value) =>
-                    value!.isEmpty ? 'Judul tidak boleh kosong' : null,
-              ),
-              const SizedBox(height: 16),
-
-              // NIP DOSEN PEMBIMBING
-              TextFormField(
-                controller: _dosenNipController,
-                decoration: const InputDecoration(
-                  labelText: 'NIP Dosen Pembimbing',
-                  border: OutlineInputBorder(),
-                ),
-                validator: (value) =>
-                    value!.isEmpty ? 'NIP dosen wajib diisi' : null,
-              ),
-              const SizedBox(height: 16),
-
-              // DESKRIPSI
-              TextFormField(
-                controller: _deskripsiController,
-                decoration: const InputDecoration(
-                  labelText: 'Deskripsi',
-                  border: OutlineInputBorder(),
-                ),
-                maxLines: 4,
-                validator: (value) =>
-                    value!.isEmpty ? 'Deskripsi tidak boleh kosong' : null,
-              ),
-              const SizedBox(height: 16),
-
-              // JADWAL
-              InkWell(
-                onTap: () => _selectDate(context),
-                child: InputDecorator(
-                  decoration: const InputDecoration(
-                    labelText: 'Jadwal Bimbingan',
-                    border: OutlineInputBorder(),
-                  ),
-                  child: Text(
-                    _selectedDate == null
-                        ? 'Pilih tanggal'
-                        : DateFormat('EEEE, d MMMM yyyy', 'id_ID')
-                            .format(_selectedDate!),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
-
-              // FILE UPLOAD
-              ElevatedButton.icon(
-                onPressed: _pickFile,
-                icon: const Icon(Icons.upload_file),
-                label: Text(
-                  _pickedPlatformFile == null ? "Upload File" : "File dipilih ✔️",
-                ),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.grey[200],
-                  foregroundColor: Colors.black,
-                ),
-              ),
-              const SizedBox(height: 24),
-
-              // SIMPAN
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: _isLoading ? null : _submitLog,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF03A9F4),
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                  ),
-                  child: _isLoading
-                      ? const CircularProgressIndicator(color: Colors.white)
-                      : const Text('Simpan'),
-                ),
-              ),
-            ],
-          ),
-        ),
+          ModernBackButton(),
+        ],
       ),
     );
   }

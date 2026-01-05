@@ -84,27 +84,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // Logika AppBar (tetap sama)
-      appBar: _selectedIndex == 2
-          ? null // Jangan tampilkan AppBar di Halaman Profil
-          : AppBar(
-              title: const Text('Sitama - Sistem Tugas Akhir Mahasiswa'),
-              backgroundColor: const Color.fromARGB(255, 255, 255, 255),
-              titleTextStyle: const TextStyle(
-                color: Color.fromARGB(131, 14, 14, 14),
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-              ),
-              iconTheme: const IconThemeData(color: Color.fromARGB(255, 116, 165, 250)),
-              actions: [
-                // Tombol Logout
-                IconButton(
-                  icon: const Icon(Icons.logout),
-                  onPressed: _logout,
-                  tooltip: 'Logout',
-                ),
-              ],
-            ),
       
       // REVISI: Ganti body ke IndexedStack
       // Ini penting agar state tiap tab (posisi scroll, data API)

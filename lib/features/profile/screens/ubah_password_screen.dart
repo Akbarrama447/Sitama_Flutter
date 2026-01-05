@@ -4,6 +4,7 @@ import 'package:http/http.dart' as http;
 import '../../../core/services/api_service.dart';
 import '../../../main.dart'; // Untuk akses storageService
 import '../../auth/screens/login_screen.dart';
+import '../../../widgets/modern_back_button.dart';
 
 class UbahPasswordScreen extends StatefulWidget {
   const UbahPasswordScreen({Key? key}) : super(key: key);
@@ -27,7 +28,7 @@ class _UbahPasswordScreenState extends State<UbahPasswordScreen> {
   Future<void> _submit() async {
     final formState = _formKey.currentState;
     if (formState == null || !formState.validate()) return;
-    
+
     setState(() {
       _isLoading = true;
       _errorMessage = null;
@@ -36,7 +37,7 @@ class _UbahPasswordScreenState extends State<UbahPasswordScreen> {
 
     // Ambil token dari storage
     final token = await storageService.getToken();
-    
+
     // Jika token tidak ada, redirect ke login
     if (token == null || token.isEmpty) {
       setState(() {
@@ -66,24 +67,24 @@ class _UbahPasswordScreenState extends State<UbahPasswordScreen> {
       'password_baru_confirmation': _confirmController.text,
     };
     final bodyJson = jsonEncode(bodyMap);
-    
+
     print('DEBUG: URL: $url');
     print('DEBUG: Headers: $headers');
     print('DEBUG: Body: $bodyJson');
-    
+
     try {
       final response = await http.post(
         Uri.parse(url),
         headers: headers,
         body: bodyJson,
       ).timeout(const Duration(seconds: 10));
-      
+
       print('DEBUG: Status: ${response.statusCode}');
       print('DEBUG: Response headers: ${response.headers}');
       print('DEBUG: Response body: ${response.body}');
-      
+
       final contentType = response.headers['content-type'] ?? '';
-      
+
       if (response.statusCode == 200 && contentType.contains('application/json')) {
         final body = jsonDecode(response.body);
         setState(() => _successMessage = body['message'] ?? 'Password berhasil diubah!');
@@ -117,32 +118,31 @@ class _UbahPasswordScreenState extends State<UbahPasswordScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Ubah Password'),
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black,
-        elevation: 0,
-      ),
       backgroundColor: const Color(0xFFF8F9FD),
-      body: Center(
-        child: SingleChildScrollView(
-          child: Container(
-            width: 370,
-            padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 24),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.07),
-                  blurRadius: 16,
-                  offset: const Offset(0, 4),
+      body: Stack(
+        children: [
+          Center(
+            child: SingleChildScrollView(
+              child: Container(
+                width: 370,
+                padding: const EdgeInsets.only(top: 80, bottom: 32, left: 24, right: 24),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.07),
+                      blurRadius: 16,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
                 ),
-              ],
+                child: _successMessage != null ? _buildSuccess() : _buildForm(),
+              ),
             ),
-            child: _successMessage != null ? _buildSuccess() : _buildForm(),
           ),
-        ),
+          ModernBackButton(),
+        ],
       ),
     );
   }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../core/services/api_service.dart';
 import 'daftar_tugas_akhir_screen.dart';
+import '../../../widgets/modern_back_button.dart';
 
 class DetailTugasAkhirScreen extends StatefulWidget {
   final String token;
@@ -57,11 +58,10 @@ class _DetailTugasAkhirScreenState extends State<DetailTugasAkhirScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.grey.shade100, // Background abu-abu muda
-      body: SafeArea(
-        child: Stack(
-          children: [
-            // Konten Utama (Header dan Detail)
-            isLoading
+      body: Stack(
+        children: [
+          SafeArea(
+            child: isLoading
                 ? const Center(child: CircularProgressIndicator())
                 : errorMessage.isNotEmpty
                     ? Center(
@@ -104,31 +104,9 @@ class _DetailTugasAkhirScreenState extends State<DetailTugasAkhirScreen> {
                         ? const Center(
                             child: Text('Data tugas akhir tidak ditemukan'))
                         : _buildContent(context),
-
-            // Back button (Ditempatkan di atas konten untuk akses mudah)
-            Positioned(
-              top: 10.0,
-              left: 10.0,
-              child: InkWell(
-                onTap: () {
-                  Navigator.pop(context);
-                },
-                child: Container(
-                  padding: const EdgeInsets.all(8.0),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.7),
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(
-                    Icons.arrow_back,
-                    size: 24,
-                    color: Colors.black87,
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
+          ),
+          ModernBackButton(),
+        ],
       ),
     );
   }
