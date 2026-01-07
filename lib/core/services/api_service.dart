@@ -6,7 +6,8 @@ class ApiService {
   // localhost -> Browser | 10.0.2.2 -> Emulator | IP WiFi -> HP Asli
   static const String apiHost = 'http://localhost:8000';
   static const String baseUrl = '$apiHost/api';
-
+  // ----------------------------------------
+// http://localhost:8000
   // --- ENDPOINTS ---
   static const String loginUrl = '$baseUrl/login';
   static const String profileUrl = '$baseUrl/profil';

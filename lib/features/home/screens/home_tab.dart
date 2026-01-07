@@ -8,6 +8,7 @@ import '../../../widgets/schedule_detail_dialog.dart';
 import '../../auth/screens/login_screen.dart';
 import '../../tugas_akhir/screens/daftar_tugas_akhir_screen.dart';
 import '../../pendaftartan_sidang/screens/pendaftaransidang.dart';
+import '../../../core/services/auth_service.dart';
 
 enum FilterType { none, room, time }
 
@@ -27,7 +28,7 @@ class _HomeTabState extends State<HomeTab> {
   String _searchQuery = '';
   late Future<List<dynamic>> _jadwalFuture;
   final String _baseUrl = 'http://localhost:8000';
-  String _userName = 'Memuat...';
+  String _userName = 'User';
 
   // --- LOGIKA CONSTRAINT BIMBINGAN ---
   // Inisialisasi awal false agar tidak error "Null is not subtype of bool"
@@ -214,24 +215,45 @@ class _HomeTabState extends State<HomeTab> {
   }
 
   Future<List<dynamic>> _fetchJadwal(DateTime tanggal) async {
-    final token = await storageService.getToken();
-    if (token == null) {
-      _forceLogout();
-      return [];
-    }
-
     final formattedDate =
         '${tanggal.year}-${tanggal.month.toString().padLeft(2, '0')}-${tanggal.day.toString().padLeft(2, '0')}';
-    final url = Uri.parse('$_baseUrl/api/jadwal-sidang?tanggal=$formattedDate');
 
     try {
-      final response =
-          await http.get(url, headers: {'Authorization': 'Bearer $token', 'Accept': 'application/json'});
+      final token = await storageService.getToken();
+      if (token == null) {
+        _forceLogout();
+        return [];
+      }
+
+      final url = Uri.parse('$_baseUrl/api/jadwal-sidang?tanggal=$formattedDate');
+      final response = await http.get(url, headers: {
+        'Authorization': 'Bearer $token',
+        'Accept': 'application/json',
+      });
 
       if (response.statusCode == 200) {
         return jsonDecode(response.body) as List<dynamic>;
       } else if (response.statusCode == 401) {
-        _forceLogout();
+        debugPrint('Token expired or unauthorized access to schedule data');
+        // Tampilkan notifikasi bahwa sesi telah berakhir
+        if (mounted) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('Sesi Anda telah berakhir. Silakan login kembali.'),
+                  backgroundColor: Colors.orange,
+                  action: SnackBarAction(
+                    label: 'Login',
+                    onPressed: () {
+                      AuthService.instance.logout(context);
+                    },
+                  ),
+                ),
+              );
+            }
+          });
+        }
         return [];
       } else {
         return [];
@@ -242,13 +264,8 @@ class _HomeTabState extends State<HomeTab> {
   }
 
   void _forceLogout() {
-    storageService.deleteToken();
-    if (mounted) {
-      Navigator.of(context, rootNavigator: true).pushAndRemoveUntil(
-        MaterialPageRoute(builder: (context) => const LoginScreen()),
-        (route) => false,
-      );
-    }
+    // Gunakan service auth untuk logout
+    AuthService.instance.logout(context);
   }
 
   List<dynamic> _filterAndSortList(List<dynamic> list) {
