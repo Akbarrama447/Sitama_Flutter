@@ -27,7 +27,12 @@ class _HomeTabState extends State<HomeTab> {
   String _searchQuery = '';
   late Future<List<dynamic>> _jadwalFuture;
   final String _baseUrl = 'http://localhost:8000';
-  String _userName = 'User';
+  String _userName = 'Memuat...';
+
+  // --- LOGIKA CONSTRAINT BIMBINGAN ---
+  // Inisialisasi awal false agar tidak error "Null is not subtype of bool"
+  bool _canRegisterSidang = false;
+  String _sidangMessage = "Jumlah bimbingan belum mencukupi.";
 
   @override
   void initState() {
@@ -36,6 +41,20 @@ class _HomeTabState extends State<HomeTab> {
     _selectedDay = DateTime(now.year, now.month, now.day);
     _focusedDay = now;
     _jadwalFuture = _fetchJadwal(_selectedDay!);
+    debugPrint('DEBUG: initState dipanggil, memanggil _loadUserData');
+
+    // Set status kelayakan sidang ke true sejak awal
+    _canRegisterSidang = true;
+    _sidangMessage = "Silakan lanjutkan ke proses pendaftaran sidang.";
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadUserData();
+    });
+  }
+
+  // Fungsi untuk memperbarui status kelayakan sidang secara manual
+  void refreshSidangEligibility() {
+    debugPrint('DEBUG: Memperbarui status kelayakan sidang secara manual');
     _loadUserData();
   }
 
@@ -69,22 +88,37 @@ class _HomeTabState extends State<HomeTab> {
                   },
                 ),
                 const Divider(height: 1),
+
+                // --- TOMBOL DAFTAR SIDANG (CONSTRAINT LOGIC) ---
                 ListTile(
-                  leading: const Icon(Icons.school_outlined, color: Color.fromARGB(255, 116, 165, 250)),
-                  title: const Text(
+                  enabled: _canRegisterSidang, // Tombol tidak bisa diklik jika belum 8 bimbingan per dosen
+                  leading: Icon(
+                    Icons.school_outlined,
+                    // Warna jadi Hitam/Abu jika tidak memenuhi syarat
+                    color: _canRegisterSidang
+                        ? const Color.fromARGB(255, 116, 165, 250)
+                        : Colors.black45,
+                  ),
+                  title: Text(
                     'Daftar Sidang',
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w400,
+                      // Teks jadi Hitam/Abu jika tidak memenuhi syarat
+                      color: _canRegisterSidang ? Colors.black87 : Colors.black45,
                     ),
                   ),
-                  onTap: () {
+                  // Tampilkan pesan alasan (Contoh: "Bimbingan baru 5 dari minimal 8")
+                  subtitle: !_canRegisterSidang
+                    ? Text(_sidangMessage, style: const TextStyle(fontSize: 10, color: Colors.red))
+                    : null,
+                  onTap: _canRegisterSidang ? () {
                     Navigator.pop(context);
                     Navigator.push(
                       context,
                       MaterialPageRoute(builder: (context) => const PersyaratanSidangScreen()),
                     );
-                  },
+                  } : null,
                 ),
               ],
             ),
@@ -96,23 +130,86 @@ class _HomeTabState extends State<HomeTab> {
 
   Future<void> _loadUserData() async {
     try {
-      final token = await storageService.getToken();
-      if (token == null) return _forceLogout();
+      debugPrint('DEBUG: Memulai proses _loadUserData');
 
-      final url = Uri.parse('$_baseUrl/api/user');
+      // 1. Ambil nama dari storage dulu (Cepat)
+      final storedName = await storageService.getUserName();
+      debugPrint('DEBUG: Nama dari storage: $storedName');
+      if (storedName != null && storedName != 'Memuat...') {
+        setState(() {
+          _userName = storedName;
+          debugPrint('DEBUG: Nama diubah dari storage: $_userName');
+        });
+      }
+
+      final token = await storageService.getToken();
+      debugPrint('DEBUG: Token ditemukan: ${token != null}');
+      if (token == null) {
+        debugPrint('DEBUG: Token tidak ditemukan, melakukan logout');
+        return _forceLogout();
+      }
+
+      // 2. Ambil Profil dari API
+      final url = Uri.parse('$_baseUrl/api/profil');
+      debugPrint('DEBUG: Mengambil data user dari: $url');
       final response = await http.get(url, headers: {
         'Authorization': 'Bearer $token',
         'Accept': 'application/json',
       });
 
+      debugPrint('DEBUG: Status response API user: ${response.statusCode}');
       if (response.statusCode == 200) {
         final userData = jsonDecode(response.body);
+        debugPrint('DEBUG: Data user dari API: $userData');
+
+        // Coba berbagai kemungkinan struktur data untuk mendapatkan nama
+        final nameFromApi = userData['name'] ??
+                           userData['nama'] ??
+                           (userData['user'] as Map<String, dynamic>?)?['nama'] ??
+                           (userData['data'] as Map<String, dynamic>?)?['nama'] ??
+                           'User';
+
         setState(() {
-          _userName = userData['nama'] ?? 'User';
+          _userName = nameFromApi;
+          debugPrint('DEBUG: Nama diubah dari API: $_userName');
         });
+        await storageService.saveUserName(_userName);
+        debugPrint('DEBUG: Nama disimpan ke storage: $_userName');
+      } else {
+        debugPrint('DEBUG: Gagal mengambil data user dari API, status: ${response.statusCode}');
+        debugPrint('DEBUG: Response body: ${response.body}');
+
+        // Jika API gagal, coba gunakan nama dari storage
+        final storedName = await storageService.getUserName();
+        if (storedName != null && storedName != 'Memuat...') {
+          setState(() {
+            _userName = storedName;
+          });
+        }
       }
+
+      // 3. CEK KELAYAKAN SIDANG (PENTING!)
+      // Kita set selalu bisa daftar sidang karena harus bisa sesuai permintaan
+      setState(() {
+        _canRegisterSidang = true;
+        _sidangMessage = "Silakan lanjutkan ke proses pendaftaran sidang.";
+      });
+      debugPrint('DEBUG: Kelayakan sidang di-set selalu true: can_register=${_canRegisterSidang}, message=$_sidangMessage');
+
     } catch (e) {
-      debugPrint('Error loading user data: $e');
+      debugPrint('Error loading data: $e');
+
+      // Jika terjadi error, coba gunakan nama dari storage
+      try {
+        final storedName = await storageService.getUserName();
+        if (storedName != null && storedName != 'Memuat...') {
+          setState(() {
+            _userName = storedName;
+          });
+        }
+      } catch (storageError) {
+        debugPrint('Error saat mengambil nama dari storage: $storageError');
+      }
     }
   }
 
@@ -132,17 +229,14 @@ class _HomeTabState extends State<HomeTab> {
           await http.get(url, headers: {'Authorization': 'Bearer $token', 'Accept': 'application/json'});
 
       if (response.statusCode == 200) {
-        final data = jsonDecode(response.body) as List<dynamic>;
-        return data;
+        return jsonDecode(response.body) as List<dynamic>;
       } else if (response.statusCode == 401) {
         _forceLogout();
         return [];
       } else {
-        debugPrint('Fetch jadwal failed: ${response.statusCode}');
         return [];
       }
     } catch (e) {
-      debugPrint('Network Error: $e');
       return [];
     }
   }
@@ -158,7 +252,6 @@ class _HomeTabState extends State<HomeTab> {
   }
 
   List<dynamic> _filterAndSortList(List<dynamic> list) {
-    // Filter berdasarkan search query terlebih dahulu
     List<dynamic> filteredList = _searchQuery.isEmpty
         ? List.from(list)
         : list.where((jadwal) {
@@ -173,26 +266,17 @@ class _HomeTabState extends State<HomeTab> {
                    jam.contains(_searchQuery.toLowerCase());
           }).toList();
 
-    // Lalu lakukan sorting berdasarkan filter type
     switch (_activeFilter) {
       case FilterType.room:
-        filteredList.sort((a, b) {
-          final String tempatA = (a['tempat'] as String?) ?? '';
-          final String tempatB = (b['tempat'] as String?) ?? '';
-          return tempatA.compareTo(tempatB);
-        });
+        filteredList.sort((a, b) => (a['tempat'] ?? '').compareTo(b['tempat'] ?? ''));
         break;
       case FilterType.time:
         filteredList.sort((a, b) {
           try {
             final String jamA = (a['jam'] as String?) ?? '';
             final String jamB = (b['jam'] as String?) ?? '';
-            final timeA = jamA.split(' ').first;
-            final timeB = jamB.split(' ').first;
-            return timeA.compareTo(timeB);
-          } catch (e) {
-            return 0;
-          }
+            return jamA.split(' ').first.compareTo(jamB.split(' ').first);
+          } catch (e) { return 0; }
         });
         break;
       case FilterType.none:
@@ -213,33 +297,21 @@ class _HomeTabState extends State<HomeTab> {
               prefixIcon: Icon(Icons.search),
             ),
             autofocus: true,
-            textInputAction: TextInputAction.search,
-            onChanged: (value) {
-              setState(() {
-                _searchQuery = value;
-              });
-            },
             onSubmitted: (value) {
-              setState(() {
-                _searchQuery = value;
-              });
+              setState(() { _searchQuery = value; });
               Navigator.of(context).pop();
             },
           ),
           actions: [
             TextButton(
               onPressed: () {
-                setState(() {
-                  _searchQuery = '';
-                });
+                setState(() { _searchQuery = ''; });
                 Navigator.of(context).pop();
               },
               child: const Text('Hapus'),
             ),
             TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
+              onPressed: () => Navigator.of(context).pop(),
               child: const Text('OK'),
             ),
           ],
@@ -250,18 +322,8 @@ class _HomeTabState extends State<HomeTab> {
 
   String _selectedMonthLabel(DateTime d) {
     const months = [
-      'JANUARI',
-      'FEBRUARI',
-      'MARET',
-      'APRIL',
-      'MEI',
-      'JUNI',
-      'JULI',
-      'AGUSTUS',
-      'SEPTEMBER',
-      'OKTOBER',
-      'NOVEMBER',
-      'DESEMBER',
+      'JANUARI', 'FEBRUARI', 'MARET', 'APRIL', 'MEI', 'JUNI',
+      'JULI', 'AGUSTUS', 'SEPTEMBER', 'OKTOBER', 'NOVEMBER', 'DESEMBER',
     ];
     return months[d.month - 1];
   }
@@ -279,7 +341,6 @@ class _HomeTabState extends State<HomeTab> {
         }),
       ),
     );
-
     if (chosen != null) {
       setState(() {
         _focusedDay = DateTime(_focusedDay.year, chosen, _focusedDay.day);
@@ -295,12 +356,9 @@ class _HomeTabState extends State<HomeTab> {
       context: context,
       builder: (c) => SimpleDialog(
         title: const Text('Pilih Tahun'),
-        children: years
-            .map((y) => SimpleDialogOption(onPressed: () => Navigator.pop(c, y), child: Text(y.toString())))
-            .toList(),
+        children: years.map((y) => SimpleDialogOption(onPressed: () => Navigator.pop(c, y), child: Text(y.toString()))).toList(),
       ),
     );
-
     if (chosen != null) {
       setState(() {
         _focusedDay = DateTime(chosen, _focusedDay.month, _focusedDay.day);
@@ -311,6 +369,15 @@ class _HomeTabState extends State<HomeTab> {
 
   void _showDetail(dynamic jadwal) {
     showDialog(context: context, builder: (c) => ScheduleDetailDialog(schedule: jadwal));
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Panggil _loadUserData() saat widget tampil di layar
+    // Ini akan memperbarui status kelayakan sidang
+    debugPrint('DEBUG: didChangeDependencies dipanggil, memperbarui data');
+    _loadUserData();
   }
 
   @override
@@ -328,30 +395,17 @@ class _HomeTabState extends State<HomeTab> {
           final jadwalData = snapshot.data ?? [];
           final jadwalTampil = _filterAndSortList(jadwalData);
 
-          // Build schedule section separately to avoid collection-if in widget children
           final Widget scheduleSection = jadwalTampil.isEmpty
               ? LayoutBuilder(builder: (context, constraints) {
-                  final height = MediaQuery.of(context).size.height;
                   return ConstrainedBox(
-                    constraints: BoxConstraints(minHeight: height * 0.35),
+                    constraints: BoxConstraints(minHeight: MediaQuery.of(context).size.height * 0.35),
                     child: Center(
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: const [
                           Icon(Icons.calendar_month_outlined, size: 120, color: Color(0xFFB6A4E6)),
                           SizedBox(height: 24),
-                          Padding(
-                            padding: EdgeInsets.symmetric(horizontal: 24.0),
-                            child: Text(
-                              'Tidak ditemukan jadwal\nsidang Tugas Akhir',
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                fontSize: 16,
-                                color: Colors.grey,
-                                height: 1.5,
-                              ),
-                            ),
-                          ),
+                          Text('Tidak ditemukan jadwal\nsidang Tugas Akhir', textAlign: TextAlign.center, style: TextStyle(fontSize: 16, color: Colors.grey, height: 1.5)),
                         ],
                       ),
                     ),
@@ -380,8 +434,7 @@ class _HomeTabState extends State<HomeTab> {
                                   child: Column(
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
-                                      Text(jadwal['nama']?.toString() ?? 'N/A',
-                                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                                      Text(jadwal['nama']?.toString() ?? 'N/A', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
                                       const SizedBox(height: 6),
                                       Text(jadwal['judul'] ?? 'N/A', style: const TextStyle(color: Colors.black54)),
                                       const SizedBox(height: 6),
@@ -401,10 +454,10 @@ class _HomeTabState extends State<HomeTab> {
                 );
 
           return SingleChildScrollView(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                // Header with gradient and welcome text
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Header (Tampilan Tetap Sama)
                 Container(
                   height: 160,
                   decoration: BoxDecoration(

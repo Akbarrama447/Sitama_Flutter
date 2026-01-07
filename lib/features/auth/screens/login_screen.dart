@@ -5,6 +5,7 @@ import '../../../main.dart'; // Untuk akses storageService
 import '../../../core/services/api_service.dart';
 import '../../dashboard/screens/dashboard_screen.dart';
 import 'ganti_password_screen.dart';
+import '../../../core/services/auth_service.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -135,15 +136,15 @@ class _LoginScreenState extends State<LoginScreen> {
                   children: [
                     // Logo Polines
                     Image.asset(
-                      'assets/logo.png',
-                      height: 120,
-                      width: 120,
+                      'assets/sitama.png',
+                      height: 200,
+                      width: 200,
                       fit: BoxFit.contain,
                     ),
-                    const SizedBox(height: 24),
+                    const SizedBox(height: 0),
                     // Judul "SITAMA"
                     Text(
-                      'SITAMA',
+                      '',
                       style: TextStyle(
                         fontSize: 36,
                         fontWeight: FontWeight.bold,
@@ -151,7 +152,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         letterSpacing: 1.5,
                       ),
                     ),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 15),
                     Text(
                       'Sistem Informasi Tugas Akhir Mahasiswa',
                       style: TextStyle(

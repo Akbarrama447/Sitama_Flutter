@@ -6,6 +6,9 @@ import '../models/status_pendaftaran_model.dart';
 import '../services/jadwal_sidang_service.dart';
 import '../services/document_list_service.dart';
 import '../models/document_model.dart';
+import '../../tugas_akhir/screens/revisi_sidang_screen.dart';
+import '../../../core/services/api_service.dart';
+import '../../../main.dart'; // untuk mengakses storageService
 
 class PendaftaranSidangPage extends StatefulWidget {
   const PendaftaranSidangPage({super.key});
@@ -681,12 +684,58 @@ class _PendaftaranSidangPageState extends State<PendaftaranSidangPage> {
                                 padding:
                                     const EdgeInsets.symmetric(vertical: 25.0),
                                 child: Center(
-                                  child: Text(
-                                    'Anda sudah terdaftar pada jadwal sidang ini',
-                                    style: TextStyle(
-                                      color: Colors.grey[600],
-                                      fontSize: 14,
-                                    ),
+                                  child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Text(
+                                        'Anda sudah terdaftar pada jadwal sidang ini',
+                                        style: TextStyle(
+                                          color: Colors.grey[600],
+                                          fontSize: 14,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 16),
+                                      ElevatedButton(
+                                        onPressed: () async {
+                                          // Ambil token dari storage
+                                          String? token;
+                                          try {
+                                            token = await storageService.getToken();
+                                          } catch (e) {
+                                            print('Error getting token: $e');
+                                          }
+
+                                          if (token != null && token.isNotEmpty) {
+                                            // Navigasi ke screen revisi sidang
+                                            if (mounted) {
+                                              Navigator.push(
+                                                context,
+                                                MaterialPageRoute(
+                                                  builder: (context) => RevisiSidangScreen(
+                                                    token: token!, // Gunakan null assertion karena udah dicek sebelumnya
+                                                  ),
+                                                ),
+                                              );
+                                            }
+                                          } else {
+                                            // Tampilkan error jika token tidak ditemukan
+                                            if (mounted) {
+                                              ScaffoldMessenger.of(context).showSnackBar(
+                                                const SnackBar(
+                                                  content: Text('Token tidak ditemukan. Silakan login kembali.'),
+                                                  backgroundColor: Colors.red,
+                                                ),
+                                              );
+                                            }
+                                          }
+                                        },
+                                        style: ElevatedButton.styleFrom(
+                                          backgroundColor: SidangColors.buttonBlue,
+                                          foregroundColor: Colors.white,
+                                        ),
+                                        child: const Text('Lihat Status Revisi'),
+                                      ),
+                                    ],
                                   ),
                                 ),
                               ),

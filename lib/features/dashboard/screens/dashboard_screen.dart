@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import '../../../main.dart'; // Untuk akses storageService
 import '../../auth/screens/login_screen.dart'; // Untuk halaman login
+import '../../../core/services/auth_service.dart';
 
 // --- IMPORT TAB KITA ---
 import '../../profile/screens/profile_tab.dart';
@@ -70,41 +71,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
     });
   }
 
-  // Fungsi logout (tetap sama)
-  void _logout() async {
-    await storageService.deleteToken();
-    if (mounted) {
-      Navigator.of(context).pushAndRemoveUntil(
-        MaterialPageRoute(builder: (context) => const LoginScreen()),
-        (route) => false,
-      );
-    }
+  // Fungsi logout (menggunakan AuthService)
+  void _logout() {
+    AuthService.instance.logout(context);
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       // Logika AppBar (tetap sama)
-      appBar: _selectedIndex == 2
-          ? null // Jangan tampilkan AppBar di Halaman Profil
-          : AppBar(
-              title: const Text('Sitama - Sistem Tugas Akhir Mahasiswa'),
-              backgroundColor: const Color.fromARGB(255, 255, 255, 255),
-              titleTextStyle: const TextStyle(
-                color: Color.fromARGB(131, 14, 14, 14),
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-              ),
-              iconTheme: const IconThemeData(color: Color.fromARGB(255, 116, 165, 250)),
-              actions: [
-                // Tombol Logout
-                IconButton(
-                  icon: const Icon(Icons.logout),
-                  onPressed: _logout,
-                  tooltip: 'Logout',
-                ),
-              ],
-            ),
+      
       
       // REVISI: Ganti body ke IndexedStack
       // Ini penting agar state tiap tab (posisi scroll, data API)
