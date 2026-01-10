@@ -31,7 +31,7 @@ class _AddLogScreenState extends State<AddLogScreen> {
   bool _isLoading = false;
 
   // Base URL backend
-  final String _baseUrl = 'http://localhost:8000';
+  final String _baseUrl = 'https://sitamanext.informatikapolines.id';
 
   @override
   void initState() {

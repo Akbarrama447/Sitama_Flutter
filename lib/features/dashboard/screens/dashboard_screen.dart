@@ -20,7 +20,7 @@ class DashboardScreen extends StatefulWidget {
 class _DashboardScreenState extends State<DashboardScreen> {
   int _selectedIndex = 0; // Halaman yang sedang aktif
   String _userName = 'Mahasiswa';
-  final String _baseUrl = 'http://localhost:8000';
+  final String _baseUrl = 'https://sitamanext.informatikapolines.id';
 
   @override
   void initState() {

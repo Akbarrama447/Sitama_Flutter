@@ -7,6 +7,7 @@ import 'pendaftaran_sidang_page.dart';
 import '../services/document_upload_service.dart';
 import '../services/document_list_service.dart';
 import '../../../core/services/upload_status_manager.dart';
+import '../../../main.dart'; // untuk mengakses storageService
 
 class PersyaratanSidangScreen extends StatefulWidget {
   const PersyaratanSidangScreen({super.key});
@@ -21,9 +22,28 @@ class _PersyaratanSidangScreenState extends State<PersyaratanSidangScreen> {
   String? errorMessage;
   bool _allDocumentsUploaded = false;
 
+  // Variabel state untuk menyimpan nama user
+  String _userName = 'User';
+
   @override
   void initState() {
     super.initState();
+    _loadUserName();
+  }
+
+  Future<void> _loadUserName() async {
+    try {
+      final storedName = await storageService.getUserName();
+      if (storedName != null && storedName != 'Memuat...') {
+        setState(() {
+          _userName = storedName;
+        });
+      }
+    } catch (e) {
+      debugPrint('Error saat mengambil nama user dari storage: $e');
+      // Biarkan _userName tetap 'User' sebagai fallback
+    }
+    // Setelah ambil nama, baru load status dokumen
     // Set ke mode API sekarang untuk upload
     DocumentUploadService.useApi = true;
     _loadDocumentsStatus(); // Load status dokumen dari storage
@@ -178,9 +198,9 @@ class _PersyaratanSidangScreenState extends State<PersyaratanSidangScreen> {
                     ),
                   ),
                   // Nama
-                  const Text(
-                    "Suko Tyas",
-                    style: TextStyle(
+                  Text(
+                    _userName,
+                    style: const TextStyle(
                         color: SidangColors.headerTextBlue,
                         fontWeight: FontWeight.bold,
                         fontSize: 16),

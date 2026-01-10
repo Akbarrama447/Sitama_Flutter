@@ -30,9 +30,28 @@ class _PendaftaranSidangPageState extends State<PendaftaranSidangPage> {
   StatusPendaftaranResponse? _statusPendaftaran;
   bool _isCheckingStatus = true;
 
+  // Variabel state untuk menyimpan nama user
+  String _userName = 'User';
+
   @override
   void initState() {
     super.initState();
+    _loadUserName();
+  }
+
+  Future<void> _loadUserName() async {
+    try {
+      final storedName = await storageService.getUserName();
+      if (storedName != null && storedName != 'Memuat...') {
+        setState(() {
+          _userName = storedName;
+        });
+      }
+    } catch (e) {
+      debugPrint('Error saat mengambil nama user dari storage: $e');
+      // Biarkan _userName tetap 'User' sebagai fallback
+    }
+    // Setelah ambil nama, baru cek status pendaftaran
     _checkStatusPendaftaran();
   }
 
@@ -443,11 +462,24 @@ class _PendaftaranSidangPageState extends State<PendaftaranSidangPage> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text('Suko Tyas',
-                      style: TextStyle(
+                  // Tombol kembali
+                  InkWell(
+                    onTap: () {
+                      Navigator.of(context).pop();
+                    },
+                    child: const Icon(
+                      Icons.arrow_back,
+                      color: SidangColors.headerTextBlue,
+                      size: 24,
+                    ),
+                  ),
+                  // Nama user di tengah (karena mainAxisAlignment: spaceBetween)
+                  Text(_userName,
+                      style: const TextStyle(
                           color: SidangColors.headerTextBlue,
                           fontWeight: FontWeight.bold,
                           fontSize: 14)),
+                  // Tombol refresh di sebelah kanan
                   IconButton(
                     icon: const Icon(Icons.refresh),
                     onPressed: _checkStatusPendaftaran,
@@ -598,11 +630,24 @@ class _PendaftaranSidangPageState extends State<PendaftaranSidangPage> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text('Suko Tyas',
-                      style: TextStyle(
+                  // Tombol kembali
+                  InkWell(
+                    onTap: () {
+                      Navigator.of(context).pop();
+                    },
+                    child: const Icon(
+                      Icons.arrow_back,
+                      color: SidangColors.headerTextBlue,
+                      size: 24,
+                    ),
+                  ),
+                  // Nama user di tengah (karena mainAxisAlignment: spaceBetween)
+                  Text(_userName,
+                      style: const TextStyle(
                           color: SidangColors.headerTextBlue,
                           fontWeight: FontWeight.bold,
                           fontSize: 14)),
+                  // Tombol refresh di sebelah kanan
                   IconButton(
                     icon: const Icon(Icons.refresh),
                     onPressed: _checkStatusPendaftaran,

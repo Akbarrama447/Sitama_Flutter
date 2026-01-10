@@ -27,7 +27,7 @@ class _HomeTabState extends State<HomeTab> {
   FilterType _activeFilter = FilterType.none;
   String _searchQuery = '';
   late Future<List<dynamic>> _jadwalFuture;
-  final String _baseUrl = 'http://localhost:8000';
+  final String _baseUrl = 'https://sitamanext.informatikapolines.id';
   String _userName = 'User';
 
   // --- LOGIKA CONSTRAINT BIMBINGAN ---

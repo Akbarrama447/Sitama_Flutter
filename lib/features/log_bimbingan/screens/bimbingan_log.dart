@@ -19,7 +19,7 @@ class TugasAkhirTab extends StatefulWidget {
 }
 
 class _TugasAkhirTabState extends State<TugasAkhirTab> {
-  final String _baseUrl = 'http://localhost:8000';
+  final String _baseUrl = 'https://sitamanext.informatikapolines.id';
   final int _targetBimbingan = 8;
 
   late Future<void> _initFuture;

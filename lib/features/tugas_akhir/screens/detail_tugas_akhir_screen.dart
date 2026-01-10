@@ -15,6 +15,11 @@ class _DetailTugasAkhirScreenState extends State<DetailTugasAkhirScreen> {
   bool isLoading = true;
   String errorMessage = '';
 
+  // Variabel state untuk menyimpan data user yang sedang login
+  String? _namaMahasiswa = 'NAMA MAHASISWA';
+  String? _nim = '0.0.0.0';
+  String? _prodi = 'D3 Teknik Informatika';
+
   @override
   void initState() {
     super.initState();
@@ -23,6 +28,19 @@ class _DetailTugasAkhirScreenState extends State<DetailTugasAkhirScreen> {
 
   Future<void> _loadThesisDetail() async {
     try {
+      // Ambil data user dari storage dulu
+      final storedProfile = await storageService.getProfile();
+      final storedName = storedProfile['nama'];
+      final storedNim = storedProfile['nim'];
+      final storedProdi = storedProfile['prodi'];
+
+      // Update state dengan data dari storage
+      setState(() {
+        _namaMahasiswa = storedName ?? _namaMahasiswa;
+        _nim = storedNim ?? _nim;
+        _prodi = storedProdi ?? _prodi;
+      });
+
       String? token = await storageService.getToken();
       if (token == null) {
         throw Exception('Token tidak ditemukan. Silakan login ulang.');
@@ -137,16 +155,27 @@ class _DetailTugasAkhirScreenState extends State<DetailTugasAkhirScreen> {
   }
 
   Widget _buildContent(BuildContext context) {
-    // Ambil data mahasiswa pertama dari anggota_kelompok sebagai pengguna saat ini
-    final List<dynamic>? anggotaKelompok = thesisData?['anggota_kelompok'];
-    final Map<String, dynamic>? currentUser = anggotaKelompok != null &&
-            anggotaKelompok.isNotEmpty
-        ? anggotaKelompok[0] // Ambil anggota pertama sebagai pengguna saat ini
-        : null;
+    // Gunakan data user yang sudah diambil dari storage di _loadThesisDetail
+    String namaMahasiswa = _namaMahasiswa ?? 'NAMA MAHASISWA';
+    String nim = _nim ?? '0.0.0.0';
+    String prodi = _prodi ?? 'D3 Teknik Informatika';
 
-    final String namaMahasiswa = currentUser?['nama'] ?? 'NAMA MAHASISWA';
-    final String nim = currentUser?['nim']?.toString() ?? '0.0.0.0';
-    final String prodi = 'D3 Teknik Informatika'; // Prodi default
+    // Jika data dari storage kosong atau tidak valid, fallback ke data dari thesisData
+    if ((namaMahasiswa == 'NAMA MAHASISWA' || nim == '0.0.0.0') && thesisData?['anggota_kelompok'] != null) {
+      final List<dynamic>? anggotaKelompok = thesisData?['anggota_kelompok'];
+      if (anggotaKelompok != null && anggotaKelompok.isNotEmpty) {
+        final Map<String, dynamic>? currentUser = anggotaKelompok[0];
+        if (currentUser != null) {
+          // Hanya gunakan data dari thesisData jika data dari storage kosong
+          if (namaMahasiswa == 'NAMA MAHASISWA') {
+            namaMahasiswa = currentUser['nama'] ?? namaMahasiswa;
+          }
+          if (nim == '0.0.0.0') {
+            nim = currentUser['nim']?.toString() ?? nim;
+          }
+        }
+      }
+    }
 
     return SingleChildScrollView(
       child: Column(

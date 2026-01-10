@@ -74,6 +74,15 @@ class _ProfileTabState extends State<ProfileTab> {
         final responseBody = json.decode(response.body);
         final userProfile = UserProfile.fromJson(responseBody['data']);
 
+        // Simpan data profil ke storage
+        await storageService.saveProfile({
+          'nama': userProfile.nama,
+          'nim': userProfile.nim.toString(), // Konversi ke string agar konsisten
+          'prodi': userProfile.prodi,
+          'email': userProfile.email,
+          'foto_profil': userProfile.fotoUrl,
+        });
+
         // Fetch thesis data
         try {
           final thesisResponse = await ApiService.getThesis(token);

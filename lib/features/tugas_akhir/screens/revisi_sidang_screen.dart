@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'package:file_picker/file_picker.dart';
 import '../services/revisi_service.dart';
+import '../../../main.dart'; // untuk mengakses storageService
 
 class RevisiSidangScreen extends StatefulWidget {
   final String token;
@@ -200,7 +203,7 @@ class _RevisiSidangScreenState extends State<RevisiSidangScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Revisi #${index + 1}',
+                        'Status #${index + 1}',
                         style: const TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
@@ -222,8 +225,8 @@ class _RevisiSidangScreenState extends State<RevisiSidangScreen> {
             ),
             const SizedBox(height: 16),
             _buildInfoRow('Tanggal', formattedDate),
-            _buildInfoRow('Dosen', _getDosenNama(revisi)),
-            _buildInfoRow('NIP Dosen', _getDosenNip(revisi)),
+            _buildInfoRow('Sekertaris', _getDosenNama(revisi)),
+            // _buildInfoRow('NIP Dosen', _getDosenNip(revisi)),
             if (revisi['catatan_revisi'] != null && revisi['catatan_revisi'].isNotEmpty)
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -304,6 +307,23 @@ class _RevisiSidangScreenState extends State<RevisiSidangScreen> {
                     ),
                   ),
                 ],
+              ),
+            // Tampilkan tombol upload file revisi hanya jika status adalah "Revisi" (case 3)
+            if (status == 3)
+              Padding(
+                padding: const EdgeInsets.only(top: 12.0),
+                child: ElevatedButton.icon(
+                  onPressed: () {
+                    // TODO: Implementasi fungsi upload file revisi
+                    _uploadFileRevisi(revisi);
+                  },
+                  icon: const Icon(Icons.upload_file),
+                  label: const Text('Upload File Revisi'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.orange,
+                    foregroundColor: Colors.white,
+                  ),
+                ),
               ),
           ],
         ),
@@ -409,5 +429,134 @@ class _RevisiSidangScreenState extends State<RevisiSidangScreen> {
     return revisi['dosen_nip'] ??
            revisi['nip_dosen'] ??
            'Tidak diketahui';
+  }
+
+  // Fungsi untuk upload file revisi ke API
+  void _uploadFileRevisi(Map<String, dynamic> revisiData) async {
+    // Pilih file dari perangkat
+    FilePickerResult? result = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: ['pdf'], // Sesuaikan ekstensi yang diizinkan
+    );
+
+    if (result != null) {
+      PlatformFile file = result.files.first;
+
+      // Ambil token dari storage
+      String? token = await storageService.getToken();
+      if (token == null) {
+        _showErrorDialog('Token autentikasi tidak ditemukan. Silakan login kembali.');
+        return;
+      }
+
+      // Buat request multipart
+      var request = http.MultipartRequest(
+        'POST',
+        Uri.parse('https://sitamanext.informatikapolines.id/api/upload-revisi-file'), // Ganti dengan base URL yang sesuai
+      );
+      request.headers['Authorization'] = 'Bearer $token';
+
+      // Tambahkan file ke request
+      // Pastikan file.bytes tidak null sebelum digunakan
+      if (file.bytes == null) {
+        _showErrorDialog('Gagal membaca file. Silakan pilih file dari penyimpanan internal.');
+        return; // Hentikan proses upload
+      }
+
+      request.files.add(
+        http.MultipartFile(
+          'file_revisi', // Sesuaikan dengan field name di backend
+          Stream.value(file.bytes!), // Gunakan Stream.value untuk Uint8List
+          file.size,
+          filename: file.name,
+        ),
+      );
+
+      try {
+        // Tampilkan loading indicator
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (BuildContext context) {
+            return const AlertDialog(
+              content: Row(
+                children: [
+                  CircularProgressIndicator(),
+                  SizedBox(width: 20),
+                  Text("Mengupload file..."),
+                ],
+              ),
+            );
+          },
+        );
+
+        // Kirim request
+        var response = await request.send();
+        var responseJson = await response.stream.bytesToString();
+
+        // Tutup loading indicator
+        Navigator.of(context).pop();
+
+        if (response.statusCode == 200) {
+          // Upload berhasil
+          _showSuccessDialog('File revisi berhasil diupload.');
+          // Refresh data revisi
+          _loadRevisiData();
+        } else {
+          // Upload gagal
+          _showErrorDialog('Gagal mengupload file revisi. Status: ${response.statusCode}\n${responseJson}');
+        }
+      } catch (e) {
+        // Tutup loading indicator jika terjadi error
+        if (Navigator.of(context).canPop()) {
+          Navigator.of(context).pop();
+        }
+        _showErrorDialog('Terjadi kesalahan saat mengupload file: $e');
+      }
+    } else {
+      // User batal memilih file
+      print('Pemilihan file dibatalkan');
+    }
+  }
+
+  void _showErrorDialog(String message) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text("Error"),
+          content: Text(message),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: const Text("OK"),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _showSuccessDialog(String message) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text("Sukses"),
+          content: Text(message),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop(); // Tutup dialog
+                Navigator.of(context).pop(); // Kembali ke halaman sebelumnya jika perlu
+              },
+              child: const Text("OK"),
+            ),
+          ],
+        );
+      },
+    );
   }
 }

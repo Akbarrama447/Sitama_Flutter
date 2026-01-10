@@ -15,7 +15,7 @@ class JadwalSidangService {
       }
 
       final response = await http.get(
-        Uri.parse('http://localhost:8000/api/jadwal-sidang/tersedia'),
+        Uri.parse('https://sitamanext.informatikapolines.id/api/jadwal-sidang/tersedia'),
         headers: {
           'Authorization': 'Bearer $token',
           'Accept': 'application/json',
@@ -56,7 +56,7 @@ class JadwalSidangService {
       }
 
       final response = await http.post(
-        Uri.parse('http://localhost:8000/api/daftar-sidang'),
+        Uri.parse('https://sitamanext.informatikapolines.id/api/daftar-sidang'),
         headers: {
           'Authorization': 'Bearer $token',
           'Accept': 'application/json',
@@ -99,7 +99,7 @@ class JadwalSidangService {
       }
 
       final response = await http.get(
-        Uri.parse('http://localhost:8000/api/pendaftaran-sidang'),
+        Uri.parse('https://sitamanext.informatikapolines.id/api/pendaftaran-sidang'),
         headers: {
           'Authorization': 'Bearer $token',
           'Accept': 'application/json',

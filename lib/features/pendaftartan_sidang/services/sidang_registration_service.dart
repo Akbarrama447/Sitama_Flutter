@@ -51,7 +51,7 @@ class SidangRegistrationService {
       }
 
       final response = await http.post(
-        Uri.parse('http://localhost:8000/api/pendaftaran-sidang'),
+        Uri.parse('https://sitamanext.informatikapolines.id/api/pendaftaran-sidang'),
         headers: {
           'Authorization': 'Bearer $token',
           'Accept': 'application/json',
