@@ -382,7 +382,7 @@ class _TugasAkhirTabState extends State<TugasAkhirTab> {
             child: DropdownButton<String>(
               value: _selectedFilter,
               isExpanded: true,
-              items: ['Semua Bimbingan', 'Menunggu', 'Ditolak', 'Disetujui'].map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
+              items: ['Semua Bimbingan', 'Menunggu', 'Ditolak', 'Disetujui'].map((e) => DropdownMenuItem(value: e, child: Text(e, overflow: TextOverflow.ellipsis))).toList(),
               onChanged: (v) => setState(() => _selectedFilter = v!),
             ),
           ),
@@ -396,7 +396,7 @@ class _TugasAkhirTabState extends State<TugasAkhirTab> {
           if (result == true) _refreshLogsForUrutan(urutan);
         },
         style: ElevatedButton.styleFrom(backgroundColor: Colors.blue, foregroundColor: Colors.white, padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16)),
-        child: const Text("Tambah"),
+        child: const Text("Tambah", overflow: TextOverflow.ellipsis),
       ),
     ]);
   }

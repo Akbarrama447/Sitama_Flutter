@@ -43,23 +43,23 @@ class Sesi {
 
   Sesi({
     required this.id,
-    required this.jamMulai,
-    required this.jamSelesai,
+    required this.jamMulai, // Ini sebenarnya mengacu pada waktu_mulai dari DB
+    required this.jamSelesai, // Ini sebenarnya mengacu pada waktu_selesai dari DB
   });
 
   factory Sesi.fromJson(Map<String, dynamic> json) {
     return Sesi(
       id: json['id'] as int? ?? 0,
-      jamMulai: json['jam_mulai'] as String? ?? '',
-      jamSelesai: json['jam_selesai'] as String? ?? '',
+      jamMulai: json['waktu_mulai'] as String? ?? '',  // Mapping dari DB field waktu_mulai
+      jamSelesai: json['waktu_selesai'] as String? ?? '', // Mapping dari DB field waktu_selesai
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
       'id': id,
-      'jam_mulai': jamMulai,
-      'jam_selesai': jamSelesai,
+      'waktu_mulai': jamMulai,      // Serialize ke DB field waktu_mulai
+      'waktu_selesai': jamSelesai,  // Serialize ke DB field waktu_selesai
     };
   }
 }

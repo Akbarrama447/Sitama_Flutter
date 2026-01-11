@@ -85,9 +85,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
       // REVISI: Ganti body ke IndexedStack
       // Ini penting agar state tiap tab (posisi scroll, data API)
       // tidak hilang saat ganti tab
-      body: IndexedStack(
-        index: _selectedIndex,
-        children: _widgetOptions,
+      body: SafeArea(
+        child: IndexedStack(
+          index: _selectedIndex,
+          children: _widgetOptions,
+        ),
       ),
 
       // BottomNavigationBar (tetap sama)

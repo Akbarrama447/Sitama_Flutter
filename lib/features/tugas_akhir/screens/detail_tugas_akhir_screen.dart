@@ -107,7 +107,7 @@ class _DetailTugasAkhirScreenState extends State<DetailTugasAkhirScreen> {
                                     context,
                                     MaterialPageRoute(
                                       builder: (context) =>
-                                          DaftarTugasAkhirScreen(),
+                                          const DaftarTugasAkhirScreen(),
                                     ),
                                   );
                                 },
@@ -161,7 +161,8 @@ class _DetailTugasAkhirScreenState extends State<DetailTugasAkhirScreen> {
     String prodi = _prodi ?? 'D3 Teknik Informatika';
 
     // Jika data dari storage kosong atau tidak valid, fallback ke data dari thesisData
-    if ((namaMahasiswa == 'NAMA MAHASISWA' || nim == '0.0.0.0') && thesisData?['anggota_kelompok'] != null) {
+    if ((namaMahasiswa == 'NAMA MAHASISWA' || nim == '0.0.0.0') &&
+        thesisData?['anggota_kelompok'] != null) {
       final List<dynamic>? anggotaKelompok = thesisData?['anggota_kelompok'];
       if (anggotaKelompok != null && anggotaKelompok.isNotEmpty) {
         final Map<String, dynamic>? currentUser = anggotaKelompok[0];
@@ -202,8 +203,7 @@ class _DetailTugasAkhirScreenState extends State<DetailTugasAkhirScreen> {
                     _buildDetailItem(
                       'Judul Tugas Akhir',
                       Text(thesisData?['judul'] ?? 'Judul tidak tersedia'),
-                      Colors
-                          .transparent, // Tidak ada container di sekeliling judul
+                      Colors.transparent,
                     ),
 
                     // Deskripsi Tugas Akhir
@@ -213,8 +213,7 @@ class _DetailTugasAkhirScreenState extends State<DetailTugasAkhirScreen> {
                         thesisData?['deskripsi'] ?? 'Deskripsi tidak tersedia',
                         style: const TextStyle(fontSize: 16),
                       ),
-                      Colors.grey
-                          .shade200, // Container abu-abu di sekeliling deskripsi
+                      Colors.grey.shade200,
                     ),
 
                     // Status
@@ -225,20 +224,33 @@ class _DetailTugasAkhirScreenState extends State<DetailTugasAkhirScreen> {
                         style: const TextStyle(
                             fontSize: 16, fontWeight: FontWeight.bold),
                       ),
-                      Colors.transparent, // Tidak ada container
+                      Colors.transparent,
                     ),
 
                     // Dosen Pembimbing
-                    _buildDetailItem(
+                   _buildDetailItem(
                       'Dosen Pembimbing',
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text('1. ${thesisData?['pembimbing_1'] ?? "-"}'),
-                          Text('2. ${thesisData?['pembimbing_2'] ?? "-"}'),
+                          // --- Pembimbing 1 ---
+                          _buildPembimbingItem(
+                            1,
+                            thesisData?['pembimbing_1'],
+                            thesisData?['pembimbing_1_nip'],
+                          ),
+
+                          const SizedBox(height: 8),
+
+                          // --- Pembimbing 2 ---
+                          _buildPembimbingItem(
+                            2,
+                            thesisData?['pembimbing_2'],
+                            thesisData?['pembimbing_2_nip'],
+                          ),
                         ],
                       ),
-                      Colors.transparent, // Tidak ada container
+                      Colors.grey.shade200,
                     ),
 
                     // Dosen Penguji
@@ -252,13 +264,24 @@ class _DetailTugasAkhirScreenState extends State<DetailTugasAkhirScreen> {
                             .map<Widget>((entry) {
                           int index = entry.key;
                           var penguji = entry.value;
-                          return Text(
-                            '${index + 1}. NIP: ${penguji['nip']} - ${penguji['nama']}',
-                            style: const TextStyle(fontSize: 16),
+                          return Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                '${index + 1}. ${penguji['nama'] ?? "-"}',
+                                style: const TextStyle(fontSize: 16),
+                              ),
+                              if (penguji['nip'] != null)
+                                Text(
+                                  'NIP: ${penguji['nip'] ?? "-"}',
+                                  style: const TextStyle(
+                                      fontSize: 14, color: Colors.grey),
+                                ),
+                            ],
                           );
                         }).toList(),
                       ),
-                      Colors.grey.shade200, // Container abu-abu
+                      Colors.grey.shade200,
                     ),
 
                     // Anggota Kelompok
@@ -266,20 +289,31 @@ class _DetailTugasAkhirScreenState extends State<DetailTugasAkhirScreen> {
                       'Anggota Kelompok',
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
-                        children:
-                            (thesisData?['anggota_kelompok'] as List? ?? [])
-                                .asMap()
-                                .entries
-                                .map<Widget>((entry) {
+                        children: (thesisData?['anggota_kelompok'] as List? ??
+                                [])
+                            .asMap()
+                            .entries
+                            .map<Widget>((entry) {
                           int index = entry.key;
                           var anggota = entry.value;
-                          return Text(
-                            '${index + 1}. NIM: ${anggota['nim']} - ${anggota['nama']}',
-                            style: const TextStyle(fontSize: 16),
+                          return Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                '${index + 1}. ${anggota['nama'] ?? "-"}',
+                                style: const TextStyle(fontSize: 16),
+                              ),
+                              if (anggota['nim'] != null)
+                                Text(
+                                  'NIM: ${anggota['nim'] ?? "-"}',
+                                  style: const TextStyle(
+                                      fontSize: 14, color: Colors.grey),
+                                ),
+                            ],
                           );
                         }).toList(),
                       ),
-                      Colors.grey.shade200, // Container abu-abu
+                      Colors.grey.shade200,
                     ),
                   ],
                 ),
@@ -317,6 +351,42 @@ class _DetailTugasAkhirScreenState extends State<DetailTugasAkhirScreen> {
           const SizedBox(height: 50),
         ],
       ),
+    );
+  }
+
+  // Helper Widget untuk menghandle Pembimbing (Support Format String Lama & Map Baru)
+  Widget _buildPembimbingItem(
+      int urutan, dynamic pembimbingData, dynamic oldNip) {
+    String nama = '-';
+    String? nip;
+
+    if (pembimbingData != null) {
+      if (pembimbingData is Map) {
+        // Format Baru (Object/Map) -> Jika API mengirim {nama: ..., nip: ...}
+        nama = pembimbingData['nama'] ?? '-';
+        nip = pembimbingData['nip'];
+      } else if (pembimbingData is String) {
+        // Format Lama (String biasa) -> Jika API mengirim "Nama Dosen"
+        nama = pembimbingData;
+        nip = oldNip; // Ambil dari key terpisah (backward compatibility)
+      }
+    } else {
+      return Text('$urutan. -');
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          '$urutan. $nama',
+          style: const TextStyle(fontSize: 16),
+        ),
+        if (nip != null)
+          Text(
+            'NIP: $nip',
+            style: const TextStyle(fontSize: 14, color: Colors.grey),
+          ),
+      ],
     );
   }
 

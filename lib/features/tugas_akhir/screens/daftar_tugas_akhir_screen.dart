@@ -19,18 +19,58 @@ class _DaftarTugasAkhirScreenState extends State<DaftarTugasAkhirScreen> {
       true; // Menandai apakah sedang memeriksa status tugas akhir
   bool _hasThesis = false; // Menandai apakah user sudah memiliki tugas akhir
 
-  // Daftar mahasiswa
   final List<Map<String, String>> _daftarMahasiswa = [
-    {'nim': '110124421', 'nama': 'Rivan Dwi Cahyanto'},
-    {'nim': '110124422', 'nama': 'Suko Tyas'},
-    {'nim': '110124423', 'nama': 'Bagas'},
-    {'nim': '110124424', 'nama': 'Dimas'},
-    {'nim': '110124425', 'nama': 'Nanda'},
-    {'nim': '110124426', 'nama': 'Cahya'},
-    {'nim': '110124427', 'nama': 'Rafi'},
-    {'nim': '110124428', 'nama': 'Tiara'},
-    {'nim': '110124429', 'nama': 'Aulia'},
-  ];
+  {'nim': '110122601', 'nama': 'Wika Dwi Aprilia'},
+  {'nim': '110124421', 'nama': 'Andromeda Elang Buana'},
+  {'nim': '110127716', 'nama': 'Akbar Romadon'},
+  {'nim': '110126640', 'nama': 'Haikal Al Waly'},
+  {'nim': '110123402', 'nama': 'Farhan Rabbani'},
+  {'nim': '110121212', 'nama': 'Selvi Rahmasari'},
+  {'nim': '110127721', 'nama': 'Rivanking'},
+  {'nim': '110129690', 'nama': 'Dimas Arif Prabowo'},
+  {'nim': '110121158', 'nama': 'Hanifah Yumna'},
+  {'nim': '110127911', 'nama': 'Farrel Sheva Basudewa'},
+  {'nim': '110126792', 'nama': 'Theron Hickle'},
+  {'nim': '110129006', 'nama': 'Norma Jacobs I'},
+  {'nim': '110126737', 'nama': 'Arthur Will'},
+  {'nim': '110127701', 'nama': 'Sophia Jacobson'},
+  {'nim': '110124003', 'nama': 'Oran Hilpert'},
+  {'nim': '110123801', 'nama': 'Adele Klocko'},
+  {'nim': '110123113', 'nama': 'Thora Kuhn'},
+  {'nim': '110123067', 'nama': 'Levi Dickens DDS'},
+  {'nim': '110126684', 'nama': 'Haskell Cronin'},
+  {'nim': '110122154', 'nama': 'Kristina D\'Amore'},
+  {'nim': '110124728', 'nama': 'Kip Gleichner'},
+  {'nim': '110125663', 'nama': 'Nedra Dickens'},
+  {'nim': '110127515', 'nama': 'Gennaro Kutch DVM'},
+  {'nim': '110123778', 'nama': 'Emil Macejkovic'},
+  {'nim': '110128963', 'nama': 'Ms. Jailyn Kshlerin I'},
+  {'nim': '110127746', 'nama': 'Bernhard Oberbrunner'},
+  {'nim': '110127038', 'nama': 'Alanis Ratke'},
+  {'nim': '110121078', 'nama': 'Heloise Hane'},
+  {'nim': '110126643', 'nama': 'Guy Schoen'},
+  {'nim': '110128273', 'nama': 'Mrs. Shany Herman'},
+  {'nim': '110126447', 'nama': 'Joel Kon'},
+  {'nim': '110126462', 'nama': 'Dr. Katelin Crist V'},
+  {'nim': '110125213', 'nama': 'Jackeline Hermann'},
+  {'nim': '110122731', 'nama': 'Joany Boyer'},
+  {'nim': '110128060', 'nama': 'Prof. Jayme Ward PhD'},
+  {'nim': '110122354', 'nama': 'Eloise Kiehn'},
+  {'nim': '110123348', 'nama': 'Willow Morar'},
+  {'nim': '110127063', 'nama': 'Kelly Casper'},
+  {'nim': '110126745', 'nama': 'Jarod Greenholt II'},
+  {'nim': '110127552', 'nama': 'Bridgette Torp'},
+  {'nim': '110126453', 'nama': 'Stuart Howe'},
+  {'nim': '110120969', 'nama': 'Dr. Shawn O\'Connell DVM'},
+  {'nim': '110129388', 'nama': 'Dr. Natasha Mills'},
+  {'nim': '110120689', 'nama': 'Dasia Schinner'},
+  {'nim': '110120206', 'nama': 'Mittie O\'Hara'},
+  {'nim': '110126092', 'nama': 'Lucio Brekke III'},
+  {'nim': '110129917', 'nama': 'Mr. Modesto Haley IV'},
+  {'nim': '110122449', 'nama': 'Adah Cassin DDS'},
+  {'nim': '110122399', 'nama': 'Irwin Bayer'},
+  {'nim': '110129047', 'nama': 'Prof. Gregory Reynolds DDS'},
+];
 
   // Daftar controller untuk setiap field anggota
   List<TextEditingController> _anggotaControllers = [TextEditingController()];
@@ -320,289 +360,355 @@ class _DaftarTugasAkhirScreenState extends State<DaftarTugasAkhirScreen> {
 
     // Tampilkan form pendaftaran jika user belum memiliki tugas akhir
     return Scaffold(
-      body: Stack(
-        children: [
-          Column(
-            children: [
-              Container(
-                height: 55,
-                color: Colors.white,
-                alignment: Alignment.centerRight,
-                padding: const EdgeInsets.only(right: 16),
-                child: const Text(
-                  'Mahasiswa',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.black87,
+      body: SafeArea(
+        child: Stack(
+          children: [
+            Column(
+              children: [
+                Container(
+                  height: 55,
+                  color: Colors.white,
+                  alignment: Alignment.centerRight,
+                  padding: const EdgeInsets.only(right: 16),
+                  child: const Text(
+                    'Mahasiswa',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.black87,
+                    ),
                   ),
                 ),
-              ),
-              Container(
-                height: 130,
-                width: double.infinity,
-                decoration: const BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.centerLeft,
-                    end: Alignment.centerRight,
-                    colors: [
-                      Colors.white,
-                      Color(0xFFB3D9FF),
-                    ],
+                Container(
+                  height: 130,
+                  width: double.infinity,
+                  decoration: const BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.centerLeft,
+                      end: Alignment.centerRight,
+                      colors: [
+                        Colors.white,
+                        Color(0xFFB3D9FF),
+                      ],
+                    ),
                   ),
                 ),
-              ),
-            ],
-          ),
-
-          /// PANAH KEMBALI
-          Positioned(
-            top: 40.0,
-            left: 16.0,
-            child: InkWell(
-              onTap: () {
-                Navigator.pop(context);
-              },
-              child: const Icon(
-                Icons.arrow_back,
-                size: 28,
-                color: Colors.black87,
-              ),
+              ],
             ),
-          ),
 
-          Positioned(
-            top: 40.0,
-            right: 16.0,
-            child: const Text(
-              'Mahasiswa',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-                color: Colors.white,
-              ),
-            ),
-          ),
-
-          Center(
-            child: SingleChildScrollView(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 20.0, vertical: 80.0),
-              child: Card(
-                elevation: 4,
-                color: Colors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12.0),
+            /// PANAH KEMBALI
+            Positioned(
+              top: 40.0,
+              left: 16.0,
+              child: InkWell(
+                onTap: () {
+                  Navigator.pop(context);
+                },
+                child: const Icon(
+                  Icons.arrow_back,
+                  size: 28,
+                  color: Colors.black87,
                 ),
-                child: Padding(
-                  padding: const EdgeInsets.all(24.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'Pendaftaran Tugas Akhir',
-                        style: TextStyle(
-                          fontSize: 22,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.black87,
-                        ),
-                      ),
+              ),
+            ),
 
-                      const SizedBox(height: 25),
+            Positioned(
+              top: 40.0,
+              right: 16.0,
+              child: const Text(
+                'Mahasiswa',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.white,
+                ),
+              ),
+            ),
 
-                      /// JUDUL
-                      const Text(
-                        'Judul Tugas Akhir *',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w500,
-                          color: Colors.black87,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      TextFormField(
-                        controller: _titleController,
-                        decoration: InputDecoration(
-                          hintText: 'Masukkan Judul Tugas Akhir',
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(8.0),
-                            borderSide: BorderSide(color: Colors.grey.shade400),
+            Center(
+              child: SingleChildScrollView(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 20.0, vertical: 80.0),
+                child: Card(
+                  elevation: 4,
+                  color: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12.0),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(24.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Pendaftaran Tugas Akhir',
+                          style: TextStyle(
+                            fontSize: 22,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.black87,
                           ),
-                          enabledBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(8.0),
-                            borderSide: BorderSide(color: Colors.grey.shade300),
+                        ),
+
+                        const SizedBox(height: 25),
+
+                        /// JUDUL
+                        const Text(
+                          'Judul Tugas Akhir *',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w500,
+                            color: Colors.black87,
                           ),
-                          contentPadding: const EdgeInsets.symmetric(
-                              horizontal: 16, vertical: 12),
-                          filled: true,
-                          fillColor: Colors.white,
                         ),
-                        maxLines: 2,
-                      ),
-
-                      const SizedBox(height: 20),
-
-                      /// DESKRIPSI
-                      const Text(
-                        'Deskripsi Tugas Akhir *',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w500,
-                          color: Colors.black87,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      TextFormField(
-                        controller: _descController,
-                        decoration: InputDecoration(
-                          hintText: 'Masukkan deskripsi tugas akhir...',
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(8),
+                        const SizedBox(height: 8),
+                        TextFormField(
+                          controller: _titleController,
+                          decoration: InputDecoration(
+                            hintText: 'Masukkan Judul Tugas Akhir',
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8.0),
+                              borderSide: BorderSide(color: Colors.grey.shade400),
+                            ),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8.0),
+                              borderSide: BorderSide(color: Colors.grey.shade300),
+                            ),
+                            contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 16, vertical: 12),
+                            filled: true,
+                            fillColor: Colors.white,
                           ),
-                          enabledBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(8),
-                            borderSide: BorderSide(color: Colors.grey.shade300),
+                          maxLines: 2,
+                        ),
+
+                        const SizedBox(height: 20),
+
+                        /// DESKRIPSI
+                        const Text(
+                          'Deskripsi Tugas Akhir *',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w500,
+                            color: Colors.black87,
                           ),
-                          contentPadding: const EdgeInsets.all(16),
-                          filled: true,
-                          fillColor: Colors.white,
                         ),
-                        maxLines: 5,
-                      ),
-
-                      const SizedBox(height: 20),
-
-                      /// ANGGOTA
-                      const Text(
-                        'Anggota Kelompok (Opsional)',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w500,
-                          color: Colors.black87,
+                        const SizedBox(height: 8),
+                        TextFormField(
+                          controller: _descController,
+                          decoration: InputDecoration(
+                            hintText: 'Masukkan deskripsi tugas akhir...',
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8),
+                              borderSide: BorderSide(color: Colors.grey.shade300),
+                            ),
+                            contentPadding: const EdgeInsets.all(16),
+                            filled: true,
+                            fillColor: Colors.white,
+                          ),
+                          maxLines: 5,
                         ),
-                      ),
-                      const SizedBox(height: 8),
 
-                      Column(
-                        children: List.generate(
-                          _anggotaControllers.length,
-                          (index) => Padding(
-                            padding: const EdgeInsets.only(bottom: 12),
-                            child: Row(
-                              children: [
-                                Expanded(
-                                  child: TextFormField(
-                                    controller: _anggotaControllers[index],
-                                    decoration: InputDecoration(
-                                      hintText: 'Masukkan NIM mahasiswa...',
-                                      border: OutlineInputBorder(
-                                        borderRadius:
-                                            BorderRadius.circular(8.0),
-                                      ),
-                                      enabledBorder: OutlineInputBorder(
-                                        borderRadius:
-                                            BorderRadius.circular(8.0),
-                                        borderSide: BorderSide(
-                                            color: Colors.grey.shade300),
-                                      ),
-                                      filled: true,
-                                      fillColor: Colors.white,
+                        const SizedBox(height: 20),
+
+                        /// ANGGOTA
+                        const Text(
+                          'Anggota Kelompok (Opsional)',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w500,
+                            color: Colors.black87,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+
+                        Column(
+                          children: List.generate(
+                            _anggotaControllers.length,
+                            (index) => Padding(
+                              padding: const EdgeInsets.only(bottom: 12),
+                              child: Row(
+                                children: [
+                                  Expanded(
+                                    child: Autocomplete<Map<String, String>>(
+                                      optionsBuilder: (TextEditingValue textEditingValue) {
+                                        if (textEditingValue.text.isEmpty) {
+                                          return const Iterable<Map<String, String>>.empty();
+                                        }
+                                        String input = textEditingValue.text.toLowerCase();
+                                        return _daftarMahasiswa.where((mahasiswa) {
+                                          return mahasiswa['nama']!.toLowerCase().contains(input) ||
+                                                 mahasiswa['nim']!.toLowerCase().contains(input);
+                                        }).take(10); // Take up to 10 matches to allow for scrolling
+                                      },
+                                      displayStringForOption: (Map<String, String> option) {
+                                        return '${option['nama']} (${option['nim']})';
+                                      },
+                                      onSelected: (Map<String, String> selection) {
+                                        _anggotaControllers[index].text = selection['nim']!;
+                                      },
+                                      fieldViewBuilder: (
+                                        context,
+                                        textEditingController,
+                                        focusNode,
+                                        onFieldSubmitted,
+                                      ) {
+                                        return TextFormField(
+                                          controller: textEditingController,
+                                          focusNode: focusNode,
+                                          decoration: InputDecoration(
+                                            hintText: 'Masukkan NIM mahasiswa...',
+                                            border: OutlineInputBorder(
+                                              borderRadius:
+                                                  BorderRadius.circular(8.0),
+                                            ),
+                                            enabledBorder: OutlineInputBorder(
+                                              borderRadius:
+                                                  BorderRadius.circular(8.0),
+                                              borderSide: BorderSide(
+                                                  color: Colors.grey.shade300),
+                                            ),
+                                            filled: true,
+                                            fillColor: Colors.white,
+                                          ),
+                                          onFieldSubmitted: (value) => onFieldSubmitted(),
+                                        );
+                                      },
+                                      optionsViewBuilder: (context, onSelected, options) {
+                                        return Align(
+                                          alignment: Alignment.topLeft,
+                                          child: Material(
+                                            elevation: 4.0,
+                                            child: ConstrainedBox(
+                                              constraints: const BoxConstraints(maxHeight: 160), // Limit height to show ~4 items
+                                              child: ListView.builder(
+                                                padding: EdgeInsets.zero,
+                                                shrinkWrap: true,
+                                                itemCount: options.length,
+                                                itemBuilder: (BuildContext context, int index) {
+                                                  final option = options.elementAt(index);
+                                                  return ListTile(
+                                                    title: Text(
+                                                      option['nama']!,
+                                                      style: const TextStyle(
+                                                        fontSize: 16,
+                                                        fontWeight: FontWeight.normal,
+                                                      ),
+                                                    ),
+                                                    subtitle: Text(
+                                                      'NIM: ${option['nim']!}',
+                                                      style: const TextStyle(
+                                                        fontSize: 12,
+                                                        color: Colors.grey,
+                                                      ),
+                                                    ),
+                                                    onTap: () {
+                                                      onSelected(option);
+                                                    },
+                                                  );
+                                                },
+                                              ),
+                                            ),
+                                          ),
+                                        );
+                                      },
                                     ),
-                                    // Tambahkan validator jika diperlukan
                                   ),
-                                ),
-                                const SizedBox(width: 8),
-                                InkWell(
-                                  onTap: () {
-                                    _tambahAnggotaField();
-                                  },
-                                  child: Container(
-                                    padding: const EdgeInsets.all(10),
-                                    decoration: BoxDecoration(
-                                      color: _anggotaControllers[index]
-                                              .text
-                                              .trim()
-                                              .isNotEmpty
-                                          ? Colors.blue
-                                          : Colors.grey,
-                                      borderRadius: BorderRadius.circular(8),
-                                    ),
-                                    child: const Icon(
-                                      Icons.add,
-                                      color: Colors.white,
+                                  const SizedBox(width: 8),
+                                  InkWell(
+                                    onTap: () {
+                                      _tambahAnggotaField();
+                                    },
+                                    child: Container(
+                                      padding: const EdgeInsets.all(10),
+                                      decoration: BoxDecoration(
+                                        color: _anggotaControllers[index]
+                                                .text
+                                                .trim()
+                                                .isNotEmpty
+                                            ? Colors.blue
+                                            : Colors.grey,
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                      child: const Icon(
+                                        Icons.add,
+                                        color: Colors.white,
+                                      ),
                                     ),
                                   ),
-                                ),
-                                const SizedBox(width: 8),
-                                index > 0
-                                    ? InkWell(
-                                        onTap: () {
-                                          _hapusAnggotaField(index);
-                                        },
-                                        child: Container(
+                                  const SizedBox(width: 8),
+                                  index > 0
+                                      ? InkWell(
+                                          onTap: () {
+                                            _hapusAnggotaField(index);
+                                          },
+                                          child: Container(
+                                            padding: const EdgeInsets.all(10),
+                                            decoration: BoxDecoration(
+                                              color: Colors.red,
+                                              borderRadius:
+                                                  BorderRadius.circular(8),
+                                            ),
+                                            child: const Icon(
+                                              Icons.remove,
+                                              color: Colors.white,
+                                            ),
+                                          ),
+                                        )
+                                      : Container(
                                           padding: const EdgeInsets.all(10),
                                           decoration: BoxDecoration(
-                                            color: Colors.red,
+                                            color: Colors.grey,
                                             borderRadius:
                                                 BorderRadius.circular(8),
                                           ),
                                           child: const Icon(
                                             Icons.remove,
-                                            color: Colors.white,
+                                            color: Colors.white54,
                                           ),
                                         ),
-                                      )
-                                    : Container(
-                                        padding: const EdgeInsets.all(10),
-                                        decoration: BoxDecoration(
-                                          color: Colors.grey,
-                                          borderRadius:
-                                              BorderRadius.circular(8),
-                                        ),
-                                        child: const Icon(
-                                          Icons.remove,
-                                          color: Colors.white54,
-                                        ),
-                                      ),
-                              ],
+                                ],
+                              ),
                             ),
                           ),
                         ),
-                      ),
 
-                      const SizedBox(height: 30),
+                        const SizedBox(height: 30),
 
-                      Center(
-                        child: _isLoading
-                            ? const CircularProgressIndicator()
-                            : ElevatedButton(
-                                onPressed:
-                                    _isLoading ? null : _submitTugasAkhir,
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: Colors.blue,
-                                  foregroundColor: Colors.white,
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 40, vertical: 12),
-                                  shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(8)),
-                                  minimumSize: const Size(200, 48),
-                                ),
-                                child: const Text(
-                                  'Ajukan Tugas Akhir',
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.bold,
+                        Center(
+                          child: _isLoading
+                              ? const CircularProgressIndicator()
+                              : ElevatedButton(
+                                  onPressed:
+                                      _isLoading ? null : _submitTugasAkhir,
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: Colors.blue,
+                                    foregroundColor: Colors.white,
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 40, vertical: 12),
+                                    shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(8)),
+                                    minimumSize: const Size(200, 48),
+                                  ),
+                                  child: const Text(
+                                    'Ajukan Tugas Akhir',
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold,
+                                    ),
                                   ),
                                 ),
-                              ),
-                      ),
+                        ),
                     ],
                   ),
                 ),
               ),
             ),
           ),
-        ],
+          ],
+        ),
       ),
     );
   }

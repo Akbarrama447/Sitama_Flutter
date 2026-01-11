@@ -3,6 +3,7 @@ import 'package:http/http.dart' as http;
 import 'package:file_picker/file_picker.dart';
 import '../services/revisi_service.dart';
 import '../../../main.dart'; // untuk mengakses storageService
+import '../../pendaftartan_sidang/constants/sidang_colors.dart'; // Import warna biru dari halaman sidang
 
 class RevisiSidangScreen extends StatefulWidget {
   final String token;
@@ -67,100 +68,134 @@ class _RevisiSidangScreenState extends State<RevisiSidangScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Detail Revisi'),
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black87,
-        elevation: 1,
-      ),
-      body: RefreshIndicator(
-        onRefresh: _loadRevisiData,
-        child: _isLoading
-            ? const Center(child: CircularProgressIndicator())
-            : _error != null
-                ? Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.error_outline,
-                          color: Colors.red,
-                          size: 60,
-                        ),
-                        const SizedBox(height: 16),
-                        const Text(
-                          'Gagal memuat data revisi',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w500,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          _error!,
-                          style: const TextStyle(
-                            fontSize: 14,
-                            color: Colors.grey,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                        const SizedBox(height: 20),
-                        ElevatedButton(
-                          onPressed: _loadRevisiData,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.blue,
-                            foregroundColor: Colors.white,
-                          ),
-                          child: const Text('Coba Lagi'),
-                        ),
-                      ],
+      backgroundColor: Colors.white,
+      body: SafeArea(
+        child: Column(
+          children: [
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  // Tombol kembali
+                  InkWell(
+                    onTap: () {
+                      Navigator.of(context).pop();
+                    },
+                    child: const Icon(
+                      Icons.arrow_back,
+                      color: SidangColors.headerTextBlue,
+                      size: 24,
                     ),
-                  )
-                : _revisiList == null || _revisiList!.isEmpty
-                    ? const Padding(
-                        padding: EdgeInsets.all(16.0),
-                        child: Center(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(
-                                Icons.info_outline,
-                                color: Colors.grey,
-                                size: 60,
-                              ),
-                              SizedBox(height: 16),
-                              Text(
-                                'Belum ada data revisi',
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w500,
-                                  color: Colors.grey,
+                  ),
+                  // Judul
+                  const Text(
+                    'Detail Revisi',
+                    style: TextStyle(
+                      color: SidangColors.headerTextBlue,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                    ),
+                  ),
+                  // Spacer untuk menjaga keseimbangan layout
+                  const SizedBox(width: 24), // Lebar sesuai dengan ikon
+                ],
+              ),
+            ),
+            const Divider(height: 1, thickness: 1, color: Color(0xFFEEEEEE)),
+            Expanded(
+              child: RefreshIndicator(
+                onRefresh: _loadRevisiData,
+                child: _isLoading
+                    ? const Center(child: CircularProgressIndicator())
+                    : _error != null
+                        ? Padding(
+                            padding: const EdgeInsets.all(16.0),
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  Icons.error_outline,
+                                  color: Colors.red,
+                                  size: 60,
                                 ),
-                                textAlign: TextAlign.center,
-                              ),
-                              SizedBox(height: 8),
-                              Text(
-                                'Detail revisi akan muncul setelah dosen memberikan penilaian',
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  color: Colors.grey,
+                                const SizedBox(height: 16),
+                                const Text(
+                                  'Gagal memuat data revisi',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                  textAlign: TextAlign.center,
                                 ),
-                                textAlign: TextAlign.center,
+                                const SizedBox(height: 8),
+                                Text(
+                                  _error!,
+                                  style: const TextStyle(
+                                    fontSize: 14,
+                                    color: Colors.grey,
+                                  ),
+                                  textAlign: TextAlign.center,
+                                ),
+                                const SizedBox(height: 20),
+                                ElevatedButton(
+                                  onPressed: _loadRevisiData,
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: Colors.blue,
+                                    foregroundColor: Colors.white,
+                                  ),
+                                  child: const Text('Coba Lagi'),
+                                ),
+                              ],
+                            ),
+                          )
+                        : _revisiList == null || _revisiList!.isEmpty
+                            ? const Padding(
+                                padding: EdgeInsets.all(16.0),
+                                child: Center(
+                                  child: Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Icon(
+                                        Icons.info_outline,
+                                        color: Colors.grey,
+                                        size: 60,
+                                      ),
+                                      SizedBox(height: 16),
+                                      Text(
+                                        'Belum ada data revisi',
+                                        style: TextStyle(
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.w500,
+                                          color: Colors.grey,
+                                        ),
+                                        textAlign: TextAlign.center,
+                                      ),
+                                      SizedBox(height: 8),
+                                      Text(
+                                        'Detail revisi akan muncul setelah dosen memberikan penilaian',
+                                        style: TextStyle(
+                                          fontSize: 14,
+                                          color: Colors.grey,
+                                        ),
+                                        textAlign: TextAlign.center,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              )
+                            : ListView.builder(
+                                padding: const EdgeInsets.all(16.0),
+                                itemCount: _revisiList!.length,
+                                itemBuilder: (context, index) {
+                                  final revisi = _revisiList![index];
+                                  return _buildRevisiCard(revisi, index);
+                                },
                               ),
-                            ],
-                          ),
-                        ),
-                      )
-                    : ListView.builder(
-                        padding: const EdgeInsets.all(16.0),
-                        itemCount: _revisiList!.length,
-                        itemBuilder: (context, index) {
-                          final revisi = _revisiList![index];
-                          return _buildRevisiCard(revisi, index);
-                        },
-                      ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -172,159 +207,191 @@ class _RevisiSidangScreenState extends State<RevisiSidangScreen> {
     final updatedAt = DateTime.parse(revisi['updated_at']);
     final formattedDate = _formatTanggal(updatedAt);
 
-    return Card(
-      margin: const EdgeInsets.only(bottom: 16),
-      elevation: 2,
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
+    return Container(
+      margin: const EdgeInsets.only(bottom: 20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(8),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.07),
+            spreadRadius: 1,
+            blurRadius: 5,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(8),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(8.0),
-                  decoration: BoxDecoration(
-                    color: statusColor.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(
-                      color: statusColor,
-                      width: 1,
-                    ),
-                  ),
-                  child: Icon(
-                    _getStatusIcon(status),
-                    color: statusColor,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+            Container(
+              width: double.infinity,
+              height: 4,
+              color: SidangColors.cardTopBorderBlue,
+            ),
+            Padding(
+              padding: const EdgeInsets.all(20.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
                     children: [
-                      Text(
-                        'Status #${index + 1}',
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.grey,
+                      Container(
+                        padding: const EdgeInsets.all(8.0),
+                        decoration: BoxDecoration(
+                          color: statusColor.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(
+                            color: statusColor,
+                            width: 1,
+                          ),
+                        ),
+                        child: Icon(
+                          _getStatusIcon(status),
+                          color: statusColor,
                         ),
                       ),
-                      Text(
-                        statusDescription,
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w600,
-                          color: statusColor,
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Status',
+                              style: const TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w500,
+                                color: Colors.grey,
+                              ),
+                            ),
+                            Text(
+                              statusDescription,
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                                color: statusColor,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ],
                   ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            _buildInfoRow('Tanggal', formattedDate),
-            _buildInfoRow('Sekertaris', _getDosenNama(revisi)),
-            // _buildInfoRow('NIP Dosen', _getDosenNip(revisi)),
-            if (revisi['catatan_revisi'] != null && revisi['catatan_revisi'].isNotEmpty)
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const SizedBox(height: 12),
-                  const Text(
-                    'Catatan Revisi:',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.grey,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: Colors.grey[50],
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(
-                        color: Colors.grey[300]!,
-                        width: 1,
-                      ),
-                    ),
-                    child: Text(
-                      revisi['catatan_revisi'],
-                      style: const TextStyle(
-                        fontSize: 14,
-                        color: Colors.black87,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            if (revisi['file_revisi'] != null && revisi['file_revisi'].isNotEmpty)
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const SizedBox(height: 12),
-                  const Text(
-                    'File Revisi:',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.grey,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: Colors.blue[50],
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(
-                        color: Colors.blue[300]!,
-                        width: 1,
-                      ),
-                    ),
-                    child: Row(
+                  const SizedBox(height: 16),
+                  _buildInfoRow('Tanggal', formattedDate),
+                  _buildInfoRow('Sekretaris', _getDosenNama(revisi)),
+                  // _buildInfoRow('NIP Dosen', _getDosenNip(revisi)),
+                  if (revisi['catatan_revisi'] != null && revisi['catatan_revisi'].isNotEmpty)
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Icon(
-                          Icons.picture_as_pdf,
-                          color: Colors.red,
-                          size: 24,
+                        const SizedBox(height: 12),
+                        const Text(
+                          'Catatan Revisi:',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.grey,
+                          ),
                         ),
-                        const SizedBox(width: 8),
-                        Expanded(
+                        const SizedBox(height: 8),
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: Colors.grey[50],
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(
+                              color: Colors.grey[300]!,
+                              width: 1,
+                            ),
+                          ),
                           child: Text(
-                            revisi['file_revisi'],
+                            revisi['catatan_revisi'],
                             style: const TextStyle(
                               fontSize: 14,
                               color: Colors.black87,
-                              decoration: TextDecoration.underline,
                             ),
                           ),
                         ),
                       ],
                     ),
-                  ),
+                  if (revisi['file_revisi'] != null && revisi['file_revisi'].isNotEmpty)
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const SizedBox(height: 12),
+                        const Text(
+                          'File Revisi:',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.grey,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: Colors.blue[50],
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(
+                              color: Colors.blue[300]!,
+                              width: 1,
+                            ),
+                          ),
+                          child: Row(
+                            children: [
+                              const Icon(
+                                Icons.picture_as_pdf,
+                                color: Colors.red,
+                                size: 24,
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  revisi['file_revisi'],
+                                  style: const TextStyle(
+                                    fontSize: 14,
+                                    color: Colors.black87,
+                                    decoration: TextDecoration.underline,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  // Tampilkan tombol upload file revisi hanya jika status adalah "Revisi" (case 3)
+                  if (status == 3)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 16.0),
+                      child: SizedBox(
+                        width: double.infinity,
+                        height: 40,
+                        child: ElevatedButton.icon(
+                          onPressed: () {
+                            // TODO: Implementasi fungsi upload file revisi
+                            _uploadFileRevisi(revisi);
+                          },
+                          icon: const Icon(Icons.upload_file),
+                          label: const Text('Upload File Revisi'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color.fromARGB(255, 0, 170, 255),
+                            foregroundColor: Colors.white,
+                            elevation: 0,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
                 ],
               ),
-            // Tampilkan tombol upload file revisi hanya jika status adalah "Revisi" (case 3)
-            if (status == 3)
-              Padding(
-                padding: const EdgeInsets.only(top: 12.0),
-                child: ElevatedButton.icon(
-                  onPressed: () {
-                    // TODO: Implementasi fungsi upload file revisi
-                    _uploadFileRevisi(revisi);
-                  },
-                  icon: const Icon(Icons.upload_file),
-                  label: const Text('Upload File Revisi'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.orange,
-                    foregroundColor: Colors.white,
-                  ),
-                ),
-              ),
+            ),
           ],
         ),
       ),
@@ -333,35 +400,25 @@ class _RevisiSidangScreenState extends State<RevisiSidangScreen> {
 
   Widget _buildInfoRow(String label, String value) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 8.0),
-      child: Row(
+      padding: const EdgeInsets.only(bottom: 12.0),
+      child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          SizedBox(
-            width: 100,
-            child: Text(
-              label,
-              style: const TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-                color: Colors.grey,
-              ),
-            ),
-          ),
-          const Text(
-            ': ',
-            style: TextStyle(
+          Text(
+            label,
+            style: const TextStyle(
               fontSize: 14,
-              color: Colors.grey,
+              fontWeight: FontWeight.w500,
+              color: Color(0xFF455A64),
             ),
           ),
-          Expanded(
-            child: Text(
-              value,
-              style: const TextStyle(
-                fontSize: 14,
-                color: Colors.black87,
-              ),
+          const SizedBox(height: 2),
+          Text(
+            value,
+            style: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+              color: Color(0xFF263238),
             ),
           ),
         ],

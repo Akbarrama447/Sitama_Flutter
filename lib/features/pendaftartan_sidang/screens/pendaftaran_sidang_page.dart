@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 import '../constants/sidang_colors.dart';
 import 'revisi_page.dart';
+import 'persyaratan_sidang_screen.dart';
 import '../models/jadwal_sidang_model.dart';
 import '../models/status_pendaftaran_model.dart';
 import '../services/jadwal_sidang_service.dart';
@@ -95,7 +98,7 @@ class _PendaftaranSidangPageState extends State<PendaftaranSidangPage> {
       // Kita mengasumsikan bahwa semua dokumen yang diperlukan memiliki ID dari 1-8
       List<int> requiredDocumentIds = [1, 2, 3, 4, 5, 6, 7, 8];
 
-      bool allVerified = true;
+      bool allDocumentsVerified = true;
 
       // Periksa apakah semua dokumen yang diperlukan sudah diupload dan terverifikasi
       for (int docId in requiredDocumentIds) {
@@ -106,17 +109,22 @@ class _PendaftaranSidangPageState extends State<PendaftaranSidangPage> {
 
         if (uploadedDoc == null || uploadedDoc.isEmpty) {
           // Dokumen ini belum diupload
-          allVerified = false;
+          allDocumentsVerified = false;
           break;
         }
 
         // Periksa apakah dokumen ini terverifikasi
         if (uploadedDoc['verified'] != 1) {
           // Dokumen ini sudah diupload tapi belum terverifikasi
-          allVerified = false;
+          allDocumentsVerified = false;
           break;
         }
       }
+
+      // Cek juga apakah syarat bimbingan terpenuhi (minimal 8 kali per dosen pembimbing)
+      bool bimbinganRequirementsMet = await _checkBimbinganRequirements();
+
+      bool allVerified = allDocumentsVerified && bimbinganRequirementsMet;
 
       if (allVerified && _statusPendaftaran?.data == null) {
         // Jika semua dokumen terverifikasi dan belum mendaftar, ambil jadwal sidang yang tersedia
@@ -125,15 +133,24 @@ class _PendaftaranSidangPageState extends State<PendaftaranSidangPage> {
 
       setState(() {
         _allDocumentsVerified = allVerified;
+        _bimbinganRequirementsMet = bimbinganRequirementsMet;
         _isLoading = false;
       });
 
       if (!allVerified && _statusPendaftaran?.data == null) {
-        // Tampilkan pesan bahwa semua dokumen harus terverifikasi
+        // Tampilkan pesan bahwa semua dokumen harus terverifikasi dan syarat bimbingan terpenuhi
+        String errorMessage = 'Tidak dapat mengakses pendaftaran sidang.\n\n';
+
+        if (!allDocumentsVerified) {
+          errorMessage += '• Harap pastikan semua dokumen persyaratan sudah diupload dan terverifikasi.\n';
+        }
+
+        if (!bimbinganRequirementsMet) {
+          errorMessage += '• Harap pastikan telah melakukan minimal 8 kali bimbingan dengan masing-masing dosen pembimbing.';
+        }
+
         WidgetsBinding.instance.addPostFrameCallback((_) {
-          _showErrorDialog(
-            'Tidak dapat mengakses pendaftaran sidang. Harap pastikan semua dokumen persyaratan sudah diupload dan terverifikasi.'
-          );
+          _showErrorDialog(errorMessage);
         });
       }
     } catch (e) {
@@ -143,6 +160,80 @@ class _PendaftaranSidangPageState extends State<PendaftaranSidangPage> {
       print('Error saat memeriksa status dokumen: $e');
     }
   }
+
+  // Fungsi untuk mengecek apakah syarat bimbingan terpenuhi (minimal 8 kali per dosen pembimbing)
+  Future<bool> _checkBimbinganRequirements() async {
+    try {
+      String? token = await storageService.getToken();
+      if (token == null) {
+        print('Token tidak ditemukan saat mengecek syarat bimbingan');
+        return false;
+      }
+
+      // Ambil data pembimbing
+      final response = await http.get(
+        Uri.parse('${ApiService.apiHost}/api/pembimbing'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Accept': 'application/json',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final pembimbingList = json.decode(response.body) as List<dynamic>;
+
+        for (final pembimbing in pembimbingList) {
+          final urutan = pembimbing['urutan'];
+
+          // Ambil log bimbingan untuk pembimbing ini
+          final logResponse = await http.get(
+            Uri.parse('${ApiService.apiHost}/api/log-bimbingan?urutan=$urutan'),
+            headers: {
+              'Authorization': 'Bearer $token',
+              'Accept': 'application/json',
+            },
+          );
+
+          if (logResponse.statusCode == 200) {
+            final logs = json.decode(logResponse.body) as List<dynamic>;
+
+            // Hitung jumlah log bimbingan yang disetujui (status = 1)
+            final approvedLogs = logs.where((log) => (log['status'] as int?) == 1).length;
+
+            // Jika pembimbing ini belum mencapai 8 bimbingan, maka tidak memenuhi syarat
+            if (approvedLogs < 8) {
+              print('Pembimbing ${pembimbing['dosen_nama']} hanya memiliki $approvedLogs bimbingan disetujui (minimal 8)');
+              return false;
+            }
+          } else {
+            print('Gagal mengambil log bimbingan untuk pembimbing urutan $urutan');
+            return false;
+          }
+        }
+
+        // Semua pembimbing telah mencapai minimal 8 bimbingan
+        return true;
+      } else {
+        print('Gagal mengambil data pembimbing: ${response.statusCode}');
+        return false;
+      }
+    } catch (e) {
+      print('Error saat mengecek syarat bimbingan: $e');
+      return false;
+    }
+  }
+
+  // Fungsi sync untuk mengecek apakah syarat bimbingan terpenuhi (untuk digunakan di UI)
+  bool _checkBimbinganRequirementsSync() {
+    // Karena kita tidak bisa menggunakan async di build method, kita akan mengandalkan
+    // state yang sudah dihitung sebelumnya atau mengembalikan nilai default
+    // Di sini kita bisa menyimpan status bimbingan di variabel state
+    // Untuk sementara, kita asumsikan jika _allDocumentsVerified true, maka bimbingan juga terpenuhi
+    // atau kita bisa menyimpan status bimbingan di state saat inisialisasi
+    return _bimbinganRequirementsMet;
+  }
+
+  bool _bimbinganRequirementsMet = false; // State untuk menyimpan status bimbingan
 
   Future<void> _loadJadwalTersedia() async {
     try {
@@ -162,9 +253,18 @@ class _PendaftaranSidangPageState extends State<PendaftaranSidangPage> {
 
   // --- DIALOG LOGIC ---
   void _showKonfirmasiDialog() {
+    // Check if all requirements are met
+    bool bimbinganRequirementsMet = _bimbinganRequirementsMet;
+
     // Validasi apakah semua dokumen terverifikasi sebelum izinkan pendaftaran
     if (!_allDocumentsVerified) {
-      _showErrorDialog('Tidak dapat melanjutkan pendaftaran sidang. Harap pastikan semua dokumen persyaratan sudah terverifikasi.');
+      _showErrorDialog('Tidak dapat melanjutkan pendaftaran sidang. Harap pastikan semua dokumen persyaratan sudah diupload dan terverifikasi.');
+      return;
+    }
+
+    // Validasi apakah syarat bimbingan terpenuhi
+    if (!bimbinganRequirementsMet) {
+      _showErrorDialog('Tidak dapat melanjutkan pendaftaran sidang. Harap pastikan telah melakukan minimal 8 kali bimbingan dengan masing-masing dosen pembimbing.');
       return;
     }
 
@@ -206,25 +306,25 @@ class _PendaftaranSidangPageState extends State<PendaftaranSidangPage> {
                   decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       border:
-                          Border.all(color: const Color(0xFF263238), width: 3)),
+                          Border.all(color: SidangColors.buttonBlue, width: 3)), // Changed to blue border
                   child: const Center(
                       child: Text("!",
                           style: TextStyle(
                               fontSize: 50,
                               fontWeight: FontWeight.bold,
-                              color: Color(0xFF263238)))),
+                              color: SidangColors.buttonBlue))), // Changed to blue text
                 ),
                 const SizedBox(height: 20),
-                const Text("APAKAH ANDA YAKIN?",
+                Text("Konfirmasi Pendaftaran Sidang",
                     style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
-                        color: Color(0xFF263238)),
+                        color: SidangColors.buttonBlue), // Changed to blue color
                     textAlign: TextAlign.center),
                 const SizedBox(height: 30),
                 SizedBox(
-                  width: 100,
-                  height: 35,
+                  width: 120, // Increased width to prevent text truncation
+                  height: 40, // Increased height for better button appearance
                   child: ElevatedButton(
                     onPressed: () {
                       Navigator.pop(context);
@@ -388,64 +488,37 @@ class _PendaftaranSidangPageState extends State<PendaftaranSidangPage> {
       );
     }
 
-    if (!_allDocumentsVerified) {
+    // Check if supervision requirements are met
+    bool bimbinganRequirementsMet = _checkBimbinganRequirementsSync();
+
+    if (!_allDocumentsVerified || !bimbinganRequirementsMet) {
+      // If requirements are not met, navigate directly to the requirements screen
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (context) => const PersyaratanSidangScreen(),
+          ),
+        );
+      });
+
+      // Show a temporary loading indicator while navigation occurs
       return Scaffold(
         backgroundColor: Colors.white,
         body: Center(
-          child: Padding(
-            padding: const EdgeInsets.all(20.0),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  Icons.warning_rounded,
-                  size: 80,
-                  color: Colors.orange,
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const CircularProgressIndicator(),
+              const SizedBox(height: 20),
+              Text(
+                'Mengarahkan ke persyaratan sidang...',
+                style: TextStyle(
+                  fontSize: 16,
+                  color: Colors.grey[600],
                 ),
-                const SizedBox(height: 20),
-                const Text(
-                  'Pendaftaran Sidang Belum Dapat Dilakukan',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 10),
-                const Text(
-                  'Harap lengkapi dan verifikasi semua dokumen persyaratan terlebih dahulu.',
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.grey,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 30),
-                SizedBox(
-                  width: 200,
-                  height: 40,
-                  child: ElevatedButton(
-                    onPressed: () {
-                      Navigator.pop(context); // Kembali ke halaman sebelumnya
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: SidangColors.buttonBlue,
-                      foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                    ),
-                    child: const Text(
-                      'Kembali',
-                      style: TextStyle(
-                        fontWeight: FontWeight.w600,
-                        fontSize: 13,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       );
@@ -714,7 +787,7 @@ class _PendaftaranSidangPageState extends State<PendaftaranSidangPage> {
                                   children: [
                                     _buildDetailInfoRow('Judul Tugas Akhir', pendaftaran.tugasAkhir.judul),
                                     _buildDetailInfoRow('Status Tugas Akhir', pendaftaran.tugasAkhir.status),
-                                    _buildDetailInfoRow('Tanggal Sidang', jadwal.tanggal),
+                                    _buildDetailInfoRow('Tanggal Sidang',  _formatTanggalGaJam(jadwal.tanggal)),
                                     _buildDetailInfoRow('Waktu Sidang', '${jadwal.sesi.jamMulai} - ${jadwal.sesi.jamSelesai}'),
                                     _buildDetailInfoRow('Ruangan', jadwal.ruangan.namaRuangan),
                                     _buildDetailInfoRow('Tanggal Daftar', _formatTanggal(pendaftaran.pendaftaranSidang.tanggalDaftar)),
@@ -805,6 +878,17 @@ class _PendaftaranSidangPageState extends State<PendaftaranSidangPage> {
       DateTime dateTime = DateTime.parse(tanggal);
       String bulan = _getNamaBulan(dateTime.month);
       return '${dateTime.day} $bulan ${dateTime.year}, ${dateTime.hour.toString().padLeft(2, '0')}:${dateTime.minute.toString().padLeft(2, '0')}';
+    } catch (e) {
+      return tanggal; // Jika gagal format, kembalikan tanggal asli
+    }
+  }
+
+  String _formatTanggalGaJam(String tanggal) {
+    // Format tanggal dari "2025-01-10T10:30:00Z" menjadi "10 Januari 2025, 10:30"
+    try {
+      DateTime dateTime = DateTime.parse(tanggal);
+      String bulan = _getNamaBulan(dateTime.month);
+      return '${dateTime.day} $bulan ${dateTime.year}';
     } catch (e) {
       return tanggal; // Jika gagal format, kembalikan tanggal asli
     }

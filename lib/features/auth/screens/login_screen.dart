@@ -113,173 +113,175 @@ class _LoginScreenState extends State<LoginScreen> {
 
     return Scaffold(
       backgroundColor: Colors.white,
-      body: Stack(
-        children: [
-          // Background
-          Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [Colors.blue.shade50, Colors.white],
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-              ),
-            ),
-          ),
-          // Konten Login
-          Center(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 32.0),
-              child: Form(
-                key: _formKey,
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    // Logo Polines
-                    Image.asset(
-                      'assets/sitama.png',
-                      height: 200,
-                      width: 200,
-                      fit: BoxFit.contain,
-                    ),
-                    const SizedBox(height: 0),
-                    // Judul "SITAMA"
-                    Text(
-                      '',
-                      style: TextStyle(
-                        fontSize: 36,
-                        fontWeight: FontWeight.bold,
-                        color: theme.colorScheme.primary,
-                        letterSpacing: 1.5,
-                      ),
-                    ),
-                    const SizedBox(height: 15),
-                    Text(
-                      'Sistem Informasi Tugas Akhir Mahasiswa',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Colors.grey[600],
-                        letterSpacing: 0.5,
-                      ),
-                    ),
-                    SizedBox(height: size.height * 0.05),
-
-                    const SizedBox(height: 32),
-                    // Form Email dengan styling baru
-                    TextFormField(
-                      controller: _emailController,
-                      decoration: _buildInputDecoration(
-                        'Alamat Email',
-                        Icons.email_outlined,
-                        hintText: 'Masukkan email anda',
-                      ),
-                      keyboardType: TextInputType.emailAddress,
-                      validator: (value) {
-                        if (value == null ||
-                            value.trim().isEmpty ||
-                            !value.contains('@')) {
-                          return 'Masukkan email yang valid';
-                        }
-                        return null;
-                      },
-                    ),
-                    const SizedBox(height: 16),
-
-                    // Form Password dengan styling baru
-                    TextFormField(
-                      controller: _passwordController,
-                      obscureText: !_isPasswordVisible,
-                      decoration: _buildInputDecoration(
-                        'Password',
-                        Icons.lock_outline,
-                        hintText: 'Masukkan password anda',
-                        suffixIcon: IconButton(
-                          icon: Icon(
-                            _isPasswordVisible
-                                ? Icons.visibility_off
-                                : Icons.visibility,
-                            color: Colors.grey[600],
-                          ),
-                          onPressed: () {
-                            setState(() {
-                              _isPasswordVisible = !_isPasswordVisible;
-                            });
-                          },
-                        ),
-                      ),
-                      validator: (value) {
-                        if (value == null || value.trim().isEmpty) {
-                          return 'Password tidak boleh kosong';
-                        }
-                        return null;
-                      },
-                    ),
-                    const SizedBox(height: 16),
-
-                    // --- Baris "Ingat Saya" & "Lupa Password" ---
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Row(
-                          children: [
-                            Checkbox(
-                              value: _rememberMe,
-                              onChanged: (value) {
-                                setState(() {
-                                  _rememberMe = value ?? false;
-                                });
-                              },
-                            ),
-                            const Text('Ingat Saya'),
-                          ],
-                        ),
-                        TextButton(
-                          onPressed: () {
-                            Navigator.of(context).push(
-                              MaterialPageRoute(
-                                builder: (_) => const GantiPasswordScreen(),
-                              ),
-                            );
-                          },
-                          child: const Text('Lupa password?'),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 24),
-
-                    // Tombol Login dengan styling baru
-                    const SizedBox(height: 8),
-                    _isLoading
-                        ? const Center(child: CircularProgressIndicator())
-                        : Container(
-                            width: double.infinity,
-                            height: 55,
-                            margin: const EdgeInsets.symmetric(vertical: 16),
-                            child: ElevatedButton(
-                              onPressed: _login,
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Color.fromARGB(255, 116, 165, 250),
-                                foregroundColor: Colors.white,
-                                elevation: 0,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                              ),
-                              child: const Text(
-                                'Masuk',
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w600,
-                                  letterSpacing: 0.5,
-                                ),
-                              ),
-                            ),
-                          ),
-                  ],
+      body: SafeArea(
+        child: Stack(
+          children: [
+            // Background
+            Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [Colors.blue.shade50, Colors.white],
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
                 ),
               ),
             ),
-          ),
-        ],
+            // Konten Login
+            Center(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(horizontal: 32.0),
+                child: Form(
+                  key: _formKey,
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      // Logo Polines
+                      Image.asset(
+                        'assets/sitama.png',
+                        height: 200,
+                        width: 200,
+                        fit: BoxFit.contain,
+                      ),
+                      const SizedBox(height: 0),
+                      // Judul "SITAMA"
+                      Text(
+                        '',
+                        style: TextStyle(
+                          fontSize: 36,
+                          fontWeight: FontWeight.bold,
+                          color: theme.colorScheme.primary,
+                          letterSpacing: 1.5,
+                        ),
+                      ),
+                      const SizedBox(height: 15),
+                      Text(
+                        'Sistem Informasi Tugas Akhir Mahasiswa',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.grey[600],
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+                      SizedBox(height: size.height * 0.05),
+
+                      const SizedBox(height: 32),
+                      // Form Email dengan styling baru
+                      TextFormField(
+                        controller: _emailController,
+                        decoration: _buildInputDecoration(
+                          'Alamat Email',
+                          Icons.email_outlined,
+                          hintText: 'Masukkan email anda',
+                        ),
+                        keyboardType: TextInputType.emailAddress,
+                        validator: (value) {
+                          if (value == null ||
+                              value.trim().isEmpty ||
+                              !value.contains('@')) {
+                            return 'Masukkan email yang valid';
+                          }
+                          return null;
+                        },
+                      ),
+                      const SizedBox(height: 16),
+
+                      // Form Password dengan styling baru
+                      TextFormField(
+                        controller: _passwordController,
+                        obscureText: !_isPasswordVisible,
+                        decoration: _buildInputDecoration(
+                          'Password',
+                          Icons.lock_outline,
+                          hintText: 'Masukkan password anda',
+                          suffixIcon: IconButton(
+                            icon: Icon(
+                              _isPasswordVisible
+                                  ? Icons.visibility_off
+                                  : Icons.visibility,
+                              color: Colors.grey[600],
+                            ),
+                            onPressed: () {
+                              setState(() {
+                                _isPasswordVisible = !_isPasswordVisible;
+                              });
+                            },
+                          ),
+                        ),
+                        validator: (value) {
+                          if (value == null || value.trim().isEmpty) {
+                            return 'Password tidak boleh kosong';
+                          }
+                          return null;
+                        },
+                      ),
+                      const SizedBox(height: 16),
+
+                      // --- Baris "Ingat Saya" & "Lupa Password" ---
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Row(
+                            children: [
+                              Checkbox(
+                                value: _rememberMe,
+                                onChanged: (value) {
+                                  setState(() {
+                                    _rememberMe = value ?? false;
+                                  });
+                                },
+                              ),
+                              const Text('Ingat Saya'),
+                            ],
+                          ),
+                          TextButton(
+                            onPressed: () {
+                              Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (_) => const GantiPasswordScreen(),
+                                ),
+                              );
+                            },
+                            child: const Text('Lupa password?'),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 24),
+
+                      // Tombol Login dengan styling baru
+                      const SizedBox(height: 8),
+                      _isLoading
+                          ? const Center(child: CircularProgressIndicator())
+                          : Container(
+                              width: double.infinity,
+                              height: 55,
+                              margin: const EdgeInsets.symmetric(vertical: 16),
+                              child: ElevatedButton(
+                                onPressed: _login,
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Color.fromARGB(255, 116, 165, 250),
+                                  foregroundColor: Colors.white,
+                                  elevation: 0,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                ),
+                                child: const Text(
+                                  'Masuk',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w600,
+                                    letterSpacing: 0.5,
+                                  ),
+                                ),
+                              ),
+                            ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
