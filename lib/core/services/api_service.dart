@@ -4,16 +4,21 @@ import 'package:http/http.dart' as http;
 class ApiService {
   // --- KONFIGURASI HOST ---
   // localhost -> Browser | 10.0.2.2 -> Emulator | IP WiFi -> HP Asli
+
+  // endpoint local = http://localhost:8000
+  // endpoint publik = https://sitamanext.informatikapolines.id
+
+
   static const String apiHost = 'https://sitamanext.informatikapolines.id';
   static const String baseUrl = '$apiHost/api';
   // ----------------------------------------
-// http://localhost:8000
   // --- ENDPOINTS ---
   static const String loginUrl = '$baseUrl/login';
   static const String profileUrl = '$baseUrl/profil';
   static const String gantiPasswordUrl = '$baseUrl/ganti-password';
   static const String tugasAkhirUrl = '$baseUrl/tugas-akhir';
   static const String uploadDokumenUrl = '$baseUrl/upload-dokumen';
+  static const String uploadRevisiUrl = '$baseUrl/upload-revisi-file';
 
   // --- 1. LOGIN ---
   static Future<Map<String, dynamic>> login(String? email, String? password) async {
@@ -151,6 +156,8 @@ class ApiService {
   }
 
   static const String mahasiswaUrl = '$baseUrl/mahasiswa';
+  static const String logBimbinganUrl = '$baseUrl/log-bimbingan';
+  static const String pembimbingUrl = '$baseUrl/pembimbing';
 
   static Future<List<dynamic>> getStudents(String token) async {
     final response = await http.get(
@@ -165,6 +172,45 @@ class ApiService {
       return jsonDecode(response.body); // Mengharapkan array mahasiswa
     } else {
       throw Exception('Gagal mengambil daftar mahasiswa');
+    }
+  }
+
+  // Fungsi untuk mengambil data log bimbingan
+  static Future<List<dynamic>> getLogBimbingan(String token, {int? urutan}) async {
+    String url = logBimbinganUrl;
+    if (urutan != null) {
+      url += '?urutan=$urutan';
+    }
+
+    final response = await http.get(
+      Uri.parse(url),
+      headers: {
+        'Accept': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+    );
+
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body)['data'] ?? jsonDecode(response.body); // Mengharapkan array log bimbingan
+    } else {
+      throw Exception('Gagal mengambil data log bimbingan');
+    }
+  }
+
+  // Fungsi untuk mengambil data pembimbing
+  static Future<List<dynamic>> getPembimbing(String token) async {
+    final response = await http.get(
+      Uri.parse(pembimbingUrl),
+      headers: {
+        'Accept': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+    );
+
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body)['data'] ?? jsonDecode(response.body); // Mengharapkan array pembimbing
+    } else {
+      throw Exception('Gagal mengambil data pembimbing');
     }
   }
 }

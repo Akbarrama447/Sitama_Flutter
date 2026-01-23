@@ -1,9 +1,11 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:file_picker/file_picker.dart';
 import '../services/revisi_service.dart';
 import '../../../main.dart'; // untuk mengakses storageService
 import '../../pendaftartan_sidang/constants/sidang_colors.dart'; // Import warna biru dari halaman sidang
+import '../../../core/services/api_service.dart'; // Import ApiService
 
 class RevisiSidangScreen extends StatefulWidget {
   final String token;
@@ -373,7 +375,7 @@ class _RevisiSidangScreenState extends State<RevisiSidangScreen> {
                         height: 40,
                         child: ElevatedButton.icon(
                           onPressed: () {
-                            // TODO: Implementasi fungsi upload file revisi
+                            print('Debug - Tombol upload ditekan!');
                             _uploadFileRevisi(revisi);
                           },
                           icon: const Icon(Icons.upload_file),
@@ -490,6 +492,9 @@ class _RevisiSidangScreenState extends State<RevisiSidangScreen> {
 
   // Fungsi untuk upload file revisi ke API
   void _uploadFileRevisi(Map<String, dynamic> revisiData) async {
+    // Debug log untuk melihat struktur data revisi
+    print('Debug - Data revisi: $revisiData');
+
     // Pilih file dari perangkat
     FilePickerResult? result = await FilePicker.platform.pickFiles(
       type: FileType.custom,
@@ -497,7 +502,7 @@ class _RevisiSidangScreenState extends State<RevisiSidangScreen> {
     );
 
     if (result != null) {
-      PlatformFile file = result.files.first;
+      PlatformFile platformFile = result.files.first;
 
       // Ambil token dari storage
       String? token = await storageService.getToken();
@@ -506,28 +511,36 @@ class _RevisiSidangScreenState extends State<RevisiSidangScreen> {
         return;
       }
 
-      // Buat request multipart
-      var request = http.MultipartRequest(
-        'POST',
-        Uri.parse('https://sitamanext.informatikapolines.id/api/upload-revisi-file'), // Ganti dengan base URL yang sesuai
-      );
-      request.headers['Authorization'] = 'Bearer $token';
+      print('Debug - Token: ${token.substring(0, 20)}...'); // Cuma nampilin awal token
 
-      // Tambahkan file ke request
+      // Ambil ID revisi dari data
+      String? revisiId = revisiData['id']?.toString();
+      print('Debug - ID Revisi: $revisiId');
+
+      if (revisiId == null) {
+        // Coba cari field ID yang mungkin punya nama beda
+        List<String> possibleIdFields = ['id_revisi', 'revisi_id', '_id', 'id_tugas_akhir', 'tugas_akhir_id'];
+        for (String field in possibleIdFields) {
+          if (revisiData.containsKey(field)) {
+            revisiId = revisiData[field]?.toString();
+            print('Debug - Ditemukan ID di field: $field, nilai: $revisiId');
+            break;
+          }
+        }
+      }
+
+      if (revisiId == null) {
+        _showErrorDialog('ID revisi tidak ditemukan di data. Field yang tersedia: ${revisiData.keys.join(", ")}');
+        return;
+      }
+
       // Pastikan file.bytes tidak null sebelum digunakan
-      if (file.bytes == null) {
+      if (platformFile.bytes == null) {
         _showErrorDialog('Gagal membaca file. Silakan pilih file dari penyimpanan internal.');
         return; // Hentikan proses upload
       }
 
-      request.files.add(
-        http.MultipartFile(
-          'file_revisi', // Sesuaikan dengan field name di backend
-          Stream.value(file.bytes!), // Gunakan Stream.value untuk Uint8List
-          file.size,
-          filename: file.name,
-        ),
-      );
+      print('Debug - File dipilih: ${platformFile.name}, ukuran: ${platformFile.size} bytes');
 
       try {
         // Tampilkan loading indicator
@@ -547,9 +560,34 @@ class _RevisiSidangScreenState extends State<RevisiSidangScreen> {
           },
         );
 
+        print('Debug - Memulai upload file ke API...');
+
+        // Buat request multipart langsung dari bytes
+        var request = http.MultipartRequest(
+          'POST',
+          Uri.parse(ApiService.uploadRevisiUrl),
+        );
+
+        request.headers['Authorization'] = 'Bearer $token';
+
+        // Tambahkan ID revisi ke request
+        request.fields['revisi_id'] = revisiId;
+
+        // Tambahkan file ke request langsung dari bytes
+        request.files.add(
+          http.MultipartFile.fromBytes(
+            'file_revisi',
+            platformFile.bytes!,
+            filename: platformFile.name,
+          ),
+        );
+
         // Kirim request
         var response = await request.send();
         var responseJson = await response.stream.bytesToString();
+
+        print('Debug - Response status: ${response.statusCode}');
+        print('Debug - Response body: $responseJson');
 
         // Tutup loading indicator
         Navigator.of(context).pop();
@@ -557,6 +595,7 @@ class _RevisiSidangScreenState extends State<RevisiSidangScreen> {
         if (response.statusCode == 200) {
           // Upload berhasil
           _showSuccessDialog('File revisi berhasil diupload.');
+
           // Refresh data revisi
           _loadRevisiData();
         } else {
@@ -568,6 +607,8 @@ class _RevisiSidangScreenState extends State<RevisiSidangScreen> {
         if (Navigator.of(context).canPop()) {
           Navigator.of(context).pop();
         }
+
+        print('Debug - Error saat upload: $e');
         _showErrorDialog('Terjadi kesalahan saat mengupload file: $e');
       }
     } else {

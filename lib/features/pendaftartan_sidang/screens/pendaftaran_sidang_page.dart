@@ -786,12 +786,12 @@ class _PendaftaranSidangPageState extends State<PendaftaranSidangPage> {
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     _buildDetailInfoRow('Judul Tugas Akhir', pendaftaran.tugasAkhir.judul),
-                                    _buildDetailInfoRow('Status Tugas Akhir', pendaftaran.tugasAkhir.status),
+                                    _buildDetailInfoRow('Status Tugas Akhir', _convertStatusTugasAkhir(pendaftaran.tugasAkhir.status)),
                                     _buildDetailInfoRow('Tanggal Sidang',  _formatTanggalGaJam(jadwal.tanggal)),
                                     _buildDetailInfoRow('Waktu Sidang', '${jadwal.sesi.jamMulai} - ${jadwal.sesi.jamSelesai}'),
                                     _buildDetailInfoRow('Ruangan', jadwal.ruangan.namaRuangan),
                                     _buildDetailInfoRow('Tanggal Daftar', _formatTanggal(pendaftaran.pendaftaranSidang.tanggalDaftar)),
-                                    _buildDetailInfoRow('Status Pendaftaran', pendaftaran.pendaftaranSidang.status),
+                                    // _buildDetailInfoRow('Status Pendaftaran', _convertStatusPendaftaran(pendaftaran.pendaftaranSidang.status)),
                                   ],
                                 ),
                               ),
@@ -851,7 +851,7 @@ class _PendaftaranSidangPageState extends State<PendaftaranSidangPage> {
                                           backgroundColor: SidangColors.buttonBlue,
                                           foregroundColor: Colors.white,
                                         ),
-                                        child: const Text('Lihat Status Revisi'),
+                                        child: const Text('Lihat Status Sidang'),
                                       ),
                                     ],
                                   ),
@@ -900,6 +900,69 @@ class _PendaftaranSidangPageState extends State<PendaftaranSidangPage> {
       'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
     ];
     return namaBulan[bulan];
+  }
+
+
+  String _convertStatusTugasAkhir(String? status) {
+    if (status == null) return 'Status Tidak Diketahui';
+
+    switch (status.toLowerCase()) {
+      case 'belum_disetujui':
+      case 'belum disetujui':
+        return 'Belum Disetujui';
+      case 'dalam_proses':
+      case 'dalam proses':
+        return 'Dalam Proses';
+      case 'selesai':
+        return 'Selesai';
+      case 'perlu_revisi':
+      case 'perlu revisi':
+        return 'Perlu Revisi';
+      case 'lulus':
+        return 'Lulus';
+      case 'tidak_lulus':
+      case 'tidak lulus':
+        return 'Tidak Lulus';
+      default:
+        // Jika status tidak dikenal, capitalize huruf pertama
+        if (status.isNotEmpty) {
+          return '${status[0].toUpperCase()}${status.substring(1).toLowerCase()}';
+        } else {
+          return 'Status Tidak Dikenal';
+        }
+    }
+  }
+
+  String _convertStatusPendaftaran(String? status) {
+    if (status == null) return 'Status Tidak Diketahui';
+
+    switch (status.toLowerCase()) {
+      case 'pending':
+      case 'menunggu':
+        return 'Menunggu Verifikasi';
+      case 'approved':
+      case 'disetujui':
+        return 'Disetujui';
+      case 'rejected':
+      case 'ditolak':
+        return 'Ditolak';
+      case 'scheduled':
+      case 'terjadwal':
+        return 'Terjadwal';
+      case 'completed':
+      case 'selesai':
+        return 'Selesai';
+      case 'cancelled':
+      case 'dibatalkan':
+        return 'Dibatalkan';
+      default:
+        // Jika status tidak dikenal, capitalize huruf pertama
+        if (status.isNotEmpty) {
+          return '${status[0].toUpperCase()}${status.substring(1).toLowerCase()}';
+        } else {
+          return 'Status Tidak Dikenal';
+        }
+    }
   }
 
   Widget _buildDetailInfoRow(String label, String value) {

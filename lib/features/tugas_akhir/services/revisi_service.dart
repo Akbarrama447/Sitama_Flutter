@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 import 'package:http/http.dart' as http;
 import '../../../core/services/api_service.dart';
 
@@ -20,7 +21,7 @@ class RevisiService {
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        
+
         if (data['status'] == 'success' && data['data'] != null) {
           return List<Map<String, dynamic>>.from(data['data']);
         } else {
@@ -89,5 +90,45 @@ class RevisiService {
   // Fungsi untuk mengecek apakah status memerlukan revisi
   static bool isRevisiRequired(int? status) {
     return status == 2 || status == 3; // Lulus dengan Revisi atau Revisi
+  }
+
+  // Fungsi untuk upload file revisi
+  static Future<Map<String, dynamic>> uploadFileRevisi({
+    required String token,
+    required String revisiId,
+    required File file,
+  }) async {
+    var request = http.MultipartRequest(
+      'POST',
+      Uri.parse(ApiService.uploadRevisiUrl),
+    );
+
+    request.headers['Authorization'] = 'Bearer $token';
+
+    // Tambahkan ID revisi ke request
+    request.fields['revisi_id'] = revisiId;
+
+    // Tambahkan file ke request
+    request.files.add(
+      await http.MultipartFile.fromPath(
+        'file_revisi',
+        file.path,
+        filename: file.path.split('/').last,
+      ),
+    );
+
+    try {
+      var response = await request.send();
+      var responseJson = await response.stream.bytesToString();
+
+      if (response.statusCode == 200) {
+        return jsonDecode(responseJson);
+      } else {
+        throw Exception('Gagal upload file revisi: ${response.statusCode} - $responseJson');
+      }
+    } catch (e) {
+      print('Error saat upload file revisi: $e');
+      rethrow;
+    }
   }
 }

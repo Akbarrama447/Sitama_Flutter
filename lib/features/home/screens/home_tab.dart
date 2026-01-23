@@ -274,9 +274,15 @@ class _HomeTabState extends State<HomeTab> {
           if (logResponse.statusCode == 200) {
             final logs = jsonDecode(logResponse.body) as List<dynamic>;
             // Hitung jumlah log bimbingan yang disetujui (status = 1)
-            final approvedLogs = logs.where((log) =>
-              (log['status'] as int?) == 1
-            ).length;
+            final approvedLogs = logs.where((log) {
+              int status = 0;
+              try {
+                status = int.tryParse(log['status'].toString()) ?? 0;
+              } catch (e) {
+                status = 0;
+              }
+              return status == 1;
+            }).length;
 
             debugPrint('DEBUG: Pembimbing $urutan memiliki $approvedLogs bimbingan disetujui');
 

@@ -8,6 +8,7 @@ import '../services/document_upload_service.dart';
 import '../services/document_list_service.dart';
 import '../../../core/services/upload_status_manager.dart';
 import '../../../main.dart'; // untuk mengakses storageService
+import '../../../core/services/api_service.dart'; // untuk akses API bimbingan
 
 class PersyaratanSidangScreen extends StatefulWidget {
   const PersyaratanSidangScreen({super.key});
@@ -105,12 +106,92 @@ class _PersyaratanSidangScreenState extends State<PersyaratanSidangScreen> {
     setState(() {
       _allDocumentsUploaded = status;
     });
+
+    // Cek juga status bimbingan setelah load dokumen
+    await _checkBimbinganStatus();
+  }
+
+  bool _bimbinganCompleted = false; // Tambahkan state untuk status bimbingan
+
+  // Fungsi untuk cek status bimbingan
+  Future<void> _checkBimbinganStatus() async {
+    try {
+      String? token = await storageService.getToken();
+      if (token == null) {
+        debugPrint('Token tidak ditemukan untuk cek status bimbingan');
+        return;
+      }
+
+      // Ambil data pembimbing
+      List<dynamic> pembimbingList = await ApiService.getPembimbing(token);
+
+      if (pembimbingList.isEmpty) {
+        setState(() {
+          _bimbinganCompleted = false;
+        });
+        return;
+      }
+
+      // Target jumlah bimbingan yang harus diselesaikan
+      const int targetBimbingan = 8;
+
+      bool allPembimbingCompleted = true;
+
+      // Cek setiap pembimbing
+      for (var pembimbing in pembimbingList) {
+        int urutan = pembimbing['urutan'];
+
+        // Ambil log bimbingan untuk pembimbing ini
+        List<dynamic> logBimbingan = await ApiService.getLogBimbingan(token, urutan: urutan);
+
+        // Hitung jumlah log bimbingan yang approved (status = 1)
+        // Konversi status ke integer untuk memastikan tipe datanya benar
+        int approvedCount = logBimbingan.where((log) {
+          int status = 0;
+          try {
+            status = int.tryParse(log['status'].toString()) ?? 0;
+          } catch (e) {
+            status = 0;
+          }
+          return status == 1;
+        }).length;
+
+        // Jika jumlah approved log kurang dari target, maka bimbingan belum selesai
+        if (approvedCount < targetBimbingan) {
+          allPembimbingCompleted = false;
+          break;
+        }
+      }
+
+      setState(() {
+        _bimbinganCompleted = allPembimbingCompleted;
+      });
+    } catch (e) {
+      debugPrint('Error saat cek status bimbingan: $e');
+      setState(() {
+        _bimbinganCompleted = false;
+      });
+    }
   }
 
   bool get isRegistrationEnabled {
     // Cek apakah semua dokumen verified ATAU status sebelumnya sudah diupload semua
-    bool allVerified = documents.every((doc) => doc.status == DocumentStatus.verified);
-    return allVerified || _allDocumentsUploaded;
+    bool allDocumentsVerified = documents.every((doc) => doc.status == DocumentStatus.verified);
+
+    // Gabungkan dengan status bimbingan
+    bool documentsReady = allDocumentsVerified || _allDocumentsUploaded;
+
+    // Registrasi enabled jika dokumen siap DAN bimbingan selesai
+    return documentsReady && _bimbinganCompleted;
+  }
+
+  // Fungsi untuk cek apakah semua dokumen udah diupload (belum tentu verified)
+  bool get isAllDocumentsUploaded {
+    // Cek apakah semua dokumen udah diupload (status uploaded atau verified)
+    bool allUploaded = documents.every((doc) =>
+      doc.status == DocumentStatus.uploaded || doc.status == DocumentStatus.verified
+    );
+    return allUploaded;
   }
 
   Future<void> _saveDocumentsStatus() async {
@@ -130,6 +211,9 @@ class _PersyaratanSidangScreenState extends State<PersyaratanSidangScreen> {
     if (allVerified) {
       _setAllDocumentsUploadedStatus(true);
     }
+
+    // Cek ulang status bimbingan setelah update dokumen
+    _checkBimbinganStatus();
   }
 
   Future<void> _clearUploadStatus() async {
@@ -189,7 +273,8 @@ class _PersyaratanSidangScreenState extends State<PersyaratanSidangScreen> {
                   // Tombol kembali
                   InkWell(
                     onTap: () {
-                      Navigator.of(context).pop();
+                      // Pop semua screen hingga ke home
+                      Navigator.of(context).popUntil(ModalRoute.withName(Navigator.defaultRouteName));
                     },
                     child: const Icon(
                       Icons.arrow_back,
@@ -262,14 +347,12 @@ class _PersyaratanSidangScreenState extends State<PersyaratanSidangScreen> {
 
                       const Divider(height: 1, color: Color(0xFFEEEEEE)),
 
-                      // LIST DOKUMEN (Dengan ScrollController Fix)
+                      // LIST DOKUMEN
                       Expanded(
                         child: Scrollbar(
-                          controller: ScrollController(),
                           thumbVisibility: true,
                           radius: const Radius.circular(10),
                           child: ListView.builder(
-                            controller: ScrollController(),
                             padding: const EdgeInsets.all(20),
                             itemCount: documents.length,
                             itemBuilder: (context, index) {
@@ -362,10 +445,24 @@ class _PersyaratanSidangScreenState extends State<PersyaratanSidangScreen> {
                                             BorderRadius.circular(6)),
                                     elevation: 0,
                                   ),
-                                  child: const Text('Daftar Sidang',
-                                      style: TextStyle(
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 14)),
+                                  child: isRegistrationEnabled
+                                      ? const Text('Daftar Sidang',
+                                          style: TextStyle(
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 14))
+                                      : Text(
+                                          _allDocumentsUploaded && _bimbinganCompleted
+                                              ? 'Memuat...'
+                                              : !_allDocumentsUploaded && !_bimbinganCompleted
+                                                  ? 'Dokumen & Bimbingan Belum Lengkap'
+                                                  : !_allDocumentsUploaded
+                                                      ? 'Dokumen Belum Lengkap'
+                                                      : 'Bimbingan Belum Lengkap',
+                                          style: const TextStyle(
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 14,
+                                              color: Colors.white),
+                                        ),
                                 ),
                               ),
                             ),

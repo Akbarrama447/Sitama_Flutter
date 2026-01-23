@@ -321,34 +321,6 @@ class _DetailTugasAkhirScreenState extends State<DetailTugasAkhirScreen> {
             ),
           ),
 
-          const SizedBox(height: 30),
-
-          // 3. Tombol Lulus (sesuai desain)
-          Align(
-            alignment: Alignment.center,
-            child: ElevatedButton(
-              onPressed: () {
-                // TODO: Implementasi Aksi tombol (misal: konfirmasi kelulusan)
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Tombol "Lulus" diklik!')),
-                );
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.grey.shade600,
-                foregroundColor: Colors.white,
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 40, vertical: 12),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-              ),
-              child: const Text(
-                'Lulus',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
-              ),
-            ),
-          ),
-          const SizedBox(height: 50),
         ],
       ),
     );
