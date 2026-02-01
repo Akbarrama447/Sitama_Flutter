@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../../../main.dart'; // untuk mengakses storageService
+import '../../../core/services/api_service.dart';
 import '../models/jadwal_sidang_model.dart';
 import '../models/status_pendaftaran_model.dart';
 
@@ -15,7 +16,7 @@ class JadwalSidangService {
       }
 
       final response = await http.get(
-        Uri.parse('https://sitamanext.informatikapolines.id/api/jadwal-sidang/tersedia'),
+        Uri.parse('${ApiService.apiHost}/api/jadwal-sidang/tersedia'),
         headers: {
           'Authorization': 'Bearer $token',
           'Accept': 'application/json',
@@ -56,7 +57,7 @@ class JadwalSidangService {
       }
 
       final response = await http.post(
-        Uri.parse('https://sitamanext.informatikapolines.id/api/daftar-sidang'),
+        Uri.parse('${ApiService.apiHost}/api/daftar-sidang'),
         headers: {
           'Authorization': 'Bearer $token',
           'Accept': 'application/json',
@@ -99,7 +100,7 @@ class JadwalSidangService {
       }
 
       final response = await http.get(
-        Uri.parse('https://sitamanext.informatikapolines.id/api/pendaftaran-sidang'),
+        Uri.parse('${ApiService.apiHost}/api/pendaftaran-sidang'),
         headers: {
           'Authorization': 'Bearer $token',
           'Accept': 'application/json',

@@ -121,7 +121,7 @@ class _PendaftaranSidangPageState extends State<PendaftaranSidangPage> {
         }
       }
 
-      // Cek juga apakah syarat bimbingan terpenuhi (minimal 8 kali per dosen pembimbing)
+      // Cek juga apakah syarat bimbingan terpenuhi (minimal sesuai setting_value dari server per dosen pembimbing)
       bool bimbinganRequirementsMet = await _checkBimbinganRequirements();
 
       bool allVerified = allDocumentsVerified && bimbinganRequirementsMet;
@@ -146,7 +146,7 @@ class _PendaftaranSidangPageState extends State<PendaftaranSidangPage> {
         }
 
         if (!bimbinganRequirementsMet) {
-          errorMessage += '• Harap pastikan telah melakukan minimal 8 kali bimbingan dengan masing-masing dosen pembimbing.';
+          errorMessage += '• Harap pastikan telah melakukan minimal sesuai setting_value dari server kali bimbingan dengan masing-masing dosen pembimbing.';
         }
 
         WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -161,13 +161,34 @@ class _PendaftaranSidangPageState extends State<PendaftaranSidangPage> {
     }
   }
 
-  // Fungsi untuk mengecek apakah syarat bimbingan terpenuhi (minimal 8 kali per dosen pembimbing)
+  // Fungsi untuk mengecek apakah syarat bimbingan terpenuhi (minimal sesuai setting_value dari server per dosen pembimbing)
   Future<bool> _checkBimbinganRequirements() async {
     try {
       String? token = await storageService.getToken();
       if (token == null) {
         print('Token tidak ditemukan saat mengecek syarat bimbingan');
         return false;
+      }
+
+      // Ambil setting_value dari server
+      int targetBimbingan = 8; // default value
+
+      try {
+        final configResponse = await http.get(
+          Uri.parse('${ApiService.apiHost}/api/configs/min-bimbingan'),
+          headers: {
+            'Authorization': 'Bearer $token',
+            'Accept': 'application/json',
+          },
+        );
+
+        if (configResponse.statusCode == 200) {
+          final configData = json.decode(configResponse.body);
+          targetBimbingan = int.tryParse(configData['setting_value'].toString()) ?? 8;
+        }
+      } catch (e) {
+        print('Error fetching min bimbingan config: $e');
+        // Use default value if API call fails
       }
 
       // Ambil data pembimbing
@@ -200,9 +221,9 @@ class _PendaftaranSidangPageState extends State<PendaftaranSidangPage> {
             // Hitung jumlah log bimbingan yang disetujui (status = 1)
             final approvedLogs = logs.where((log) => (log['status'] as int?) == 1).length;
 
-            // Jika pembimbing ini belum mencapai 8 bimbingan, maka tidak memenuhi syarat
-            if (approvedLogs < 8) {
-              print('Pembimbing ${pembimbing['dosen_nama']} hanya memiliki $approvedLogs bimbingan disetujui (minimal 8)');
+            // Jika pembimbing ini belum mencapai target bimbingan dari server, maka tidak memenuhi syarat
+            if (approvedLogs < targetBimbingan) {
+              print('Pembimbing ${pembimbing['dosen_nama']} hanya memiliki $approvedLogs bimbingan disetujui (minimal $targetBimbingan)');
               return false;
             }
           } else {
@@ -211,7 +232,7 @@ class _PendaftaranSidangPageState extends State<PendaftaranSidangPage> {
           }
         }
 
-        // Semua pembimbing telah mencapai minimal 8 bimbingan
+        // Semua pembimbing telah mencapai minimal target bimbingan dari server
         return true;
       } else {
         print('Gagal mengambil data pembimbing: ${response.statusCode}');
@@ -264,7 +285,7 @@ class _PendaftaranSidangPageState extends State<PendaftaranSidangPage> {
 
     // Validasi apakah syarat bimbingan terpenuhi
     if (!bimbinganRequirementsMet) {
-      _showErrorDialog('Tidak dapat melanjutkan pendaftaran sidang. Harap pastikan telah melakukan minimal 8 kali bimbingan dengan masing-masing dosen pembimbing.');
+      _showErrorDialog('Tidak dapat melanjutkan pendaftaran sidang. Harap pastikan telah melakukan minimal sesuai setting_value dari server kali bimbingan dengan masing-masing dosen pembimbing.');
       return;
     }
 

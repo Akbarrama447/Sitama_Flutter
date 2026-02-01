@@ -360,6 +360,12 @@ class DocumentItemWidget extends StatelessWidget {
         borderColor = Colors.transparent;
         statusIcon = const Icon(Icons.check_circle, color: SidangColors.statusBlueText, size: 16);
         break;
+      case DocumentStatus.uploaded:
+        fillColor = Colors.white;
+        textColor = SidangColors.statusGrayText;
+        borderColor = SidangColors.statusGrayBorder;
+        statusIcon = Container(); // Tidak ada icon untuk uploaded
+        break;
       case DocumentStatus.uploading:
         fillColor = SidangColors.statusOrangeBg; // Warna untuk status uploading
         textColor = SidangColors.statusOrangeText;
@@ -413,16 +419,17 @@ class DocumentItemWidget extends StatelessWidget {
                             ? BorderStyle.solid
                             : BorderStyle.none),
                   ),
-                  child: Row(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Expanded(
                         child: Text(
                           item.filename.isEmpty ? "Belum ada file" : item.filename,
                           style: TextStyle(
                             color:
-                                item.filename.isEmpty ? Colors.grey[400] : textColor,
+                                (item.filename.isEmpty && item.status != DocumentStatus.uploaded && item.status != DocumentStatus.rejected) ? Colors.grey[400] : textColor,
                             fontSize: 14,
-                            fontStyle: item.filename.isEmpty
+                            fontStyle: (item.filename.isEmpty && item.status != DocumentStatus.uploaded && item.status != DocumentStatus.rejected)
                                 ? FontStyle.italic
                                 : FontStyle.normal,
                           ),
@@ -430,10 +437,24 @@ class DocumentItemWidget extends StatelessWidget {
                           maxLines: 1,
                         ),
                       ),
-                      if (item.status != DocumentStatus.waiting && item.status != DocumentStatus.uploading) ...[
-                        const SizedBox(width: 8),
-                        statusIcon,
-                      ],
+                      if (item.status == DocumentStatus.uploaded)
+                        Text(
+                          "(Tunggu Verifikasi)",
+                          style: const TextStyle(
+                            color: Colors.blue,
+                            fontSize: 10,
+                            fontStyle: FontStyle.italic,
+                          ),
+                        ),
+                      if (item.status == DocumentStatus.rejected)
+                        Text(
+                          "(Dokumen Tidak Disetujui)",
+                          style: const TextStyle(
+                            color: Colors.red,
+                            fontSize: 10,
+                            fontStyle: FontStyle.italic,
+                          ),
+                        ),
                     ],
                   ),
                 ),

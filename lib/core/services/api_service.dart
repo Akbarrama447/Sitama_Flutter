@@ -5,11 +5,11 @@ class ApiService {
   // --- KONFIGURASI HOST ---
   // localhost -> Browser | 10.0.2.2 -> Emulator | IP WiFi -> HP Asli
 
-  // endpoint local = http://localhost:8000
-  // endpoint publik = https://sitamanext.informatikapolines.id
+  // endpoint local untuk development = http://localhost:8000
+  // endpoint production = https://sitamanext.informatikapolines.id
 
 
-  static const String apiHost = 'https://sitamanext.informatikapolines.id';
+  static const String apiHost = 'http://localhost:8000';
   static const String baseUrl = '$apiHost/api';
   // ----------------------------------------
   // --- ENDPOINTS ---

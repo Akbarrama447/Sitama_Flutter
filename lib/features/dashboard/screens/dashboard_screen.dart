@@ -4,6 +4,7 @@ import 'package:http/http.dart' as http;
 import '../../../main.dart'; // Untuk akses storageService
 import '../../auth/screens/login_screen.dart'; // Untuk halaman login
 import '../../../core/services/auth_service.dart';
+import '../../../core/services/api_service.dart';
 
 // --- IMPORT TAB KITA ---
 import '../../profile/screens/profile_tab.dart';
@@ -20,7 +21,6 @@ class DashboardScreen extends StatefulWidget {
 class _DashboardScreenState extends State<DashboardScreen> {
   int _selectedIndex = 0; // Halaman yang sedang aktif
   String _userName = 'Mahasiswa';
-  final String _baseUrl = 'https://sitamanext.informatikapolines.id';
 
   @override
   void initState() {
@@ -33,7 +33,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       final token = await storageService.getToken();
       if (token == null) return _logout();
 
-      final url = Uri.parse('$_baseUrl/api/user');
+      final url = Uri.parse('${ApiService.apiHost}/api/user');
       final response = await http.get(url, headers: {
         'Authorization': 'Bearer $token',
         'Accept': 'application/json',

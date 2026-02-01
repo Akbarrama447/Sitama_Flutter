@@ -10,6 +10,7 @@ import 'edit_log_screen.dart';
 import 'detail_bimbingan_dialog.dart';
 import 'file_preview_screen.dart';
 import '../../../core/services/auth_service.dart';
+import '../../../core/services/api_service.dart';
 
 class TugasAkhirTab extends StatefulWidget {
   const TugasAkhirTab({super.key});
@@ -19,8 +20,7 @@ class TugasAkhirTab extends StatefulWidget {
 }
 
 class _TugasAkhirTabState extends State<TugasAkhirTab> {
-  final String _baseUrl = 'https://sitamanext.informatikapolines.id';
-  final int _targetBimbingan = 8;
+  int _targetBimbingan = 8; // Default value, will be updated from API
 
   late Future<void> _initFuture;
   List<Map<String, dynamic>> _pembimbingList = [];
@@ -43,9 +43,38 @@ class _TugasAkhirTabState extends State<TugasAkhirTab> {
   }
 
   Future<void> _initialize() async {
+    await _fetchMinBimbinganConfig();
     await _fetchPembimbing();
     if (_pembimbingList.isNotEmpty) {
       await _fetchLogsForUrutan(_pembimbingList[_currentIndex]['urutan']);
+    }
+  }
+
+  Future<void> _fetchMinBimbinganConfig() async {
+    try {
+      final token = await storageService.getToken();
+      if (token == null) return _forceLogout();
+
+      final url = '${ApiService.apiHost}/api/configs/min-bimbingan';
+      final res = await http.get(
+        Uri.parse(url),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Accept': 'application/json',
+        },
+      );
+
+      if (res.statusCode == 200) {
+        final data = jsonDecode(res.body);
+        setState(() {
+          _targetBimbingan = int.tryParse(data['setting_value'].toString()) ?? 8;
+        });
+      } else if (res.statusCode == 401) {
+        _forceLogout();
+      }
+    } catch (e) {
+      debugPrint('Error fetching min bimbingan config: $e');
+      // Use default value if API call fails
     }
   }
 
@@ -54,7 +83,7 @@ class _TugasAkhirTabState extends State<TugasAkhirTab> {
       final token = await storageService.getToken();
       if (token == null) return _forceLogout();
 
-      final url = '$_baseUrl/api/pembimbing';
+      final url = '${ApiService.apiHost}/api/pembimbing';
       final res = await http.get(
         Uri.parse(url),
         headers: {
@@ -81,7 +110,7 @@ class _TugasAkhirTabState extends State<TugasAkhirTab> {
       final token = await storageService.getToken();
       if (token == null) return _forceLogout();
 
-      final url = '$_baseUrl/api/log-bimbingan?urutan=$urutan';
+      final url = '${ApiService.apiHost}/api/log-bimbingan?urutan=$urutan';
       final res = await http.get(
         Uri.parse(url),
         headers: {
@@ -108,6 +137,14 @@ class _TugasAkhirTabState extends State<TugasAkhirTab> {
   void _forceLogout() {
     // Gunakan service auth untuk logout
     AuthService.instance.logout(context);
+  }
+
+  Future<void> _refreshData() async {
+    await _fetchMinBimbinganConfig();
+    await _fetchPembimbing();
+    if (_pembimbingList.isNotEmpty) {
+      await _fetchLogsForUrutan(_pembimbingList[_currentIndex]['urutan']);
+    }
   }
 
   void _goPrevious() {
@@ -212,78 +249,81 @@ class _TugasAkhirTabState extends State<TugasAkhirTab> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9FD),
-      body: FutureBuilder<void>(
-        future: _initFuture,
-        builder: (context, snap) {
-          if (snap.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
+      body: RefreshIndicator(
+        onRefresh: _refreshData,
+        child: FutureBuilder<void>(
+          future: _initFuture,
+          builder: (context, snap) {
+            if (snap.connectionState == ConnectionState.waiting) {
+              return const Center(child: CircularProgressIndicator());
+            }
 
-          if (_pembimbingList.isEmpty) {
-            return const Center(child: Text('Tidak ada pembimbing terdaftar.'));
-          }
+            if (_pembimbingList.isEmpty) {
+              return const Center(child: Text('Tidak ada pembimbing terdaftar.'));
+            }
 
-          return Column(
-            children: [
-              Padding(
-                padding: const EdgeInsets.all(16),
-                child: _buildStatusCardForIndex(_currentIndex),
-              ),
-              Expanded(
-                child: PageView.builder(
-                  controller: _pageController,
-                  itemCount: _pembimbingList.length,
-                  onPageChanged: (idx) async {
-                    setState(() => _currentIndex = idx);
-                    await _fetchLogsForUrutan(_pembimbingList[idx]['urutan']);
-                  },
-                  itemBuilder: (context, index) {
-                    final pembimbing = _pembimbingList[index];
-                    final urutan = pembimbing['urutan'];
-                    final logs = _logsPerPembimbing[urutan] ?? [];
-
-                    final filtered = _selectedFilter == 'Semua Bimbingan'
-                        ? logs
-                        : _selectedFilter == 'Disetujui'
-                            ? logs.where((l) => _mapStatus(l['status']) == 'approve').toList()
-                            : _selectedFilter == 'Menunggu'
-                                ? logs.where((l) => _mapStatus(l['status']) == 'pending').toList()
-                                : logs.where((l) => _mapStatus(l['status']) == 'ditolak').toList();
-
-
-                    final progressCount = logs.where((log) => _mapStatus(log['status']) == 'approve').length;
-                    final progressValue = (progressCount / _targetBimbingan).clamp(0.0, 1.0);
-
-                    return SingleChildScrollView(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            'Pembimbingan',
-                            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF2C3E50)),
-                          ),
-                          const SizedBox(height: 12),
-                          _buildControls(pembimbing, urutan, progressCount, progressValue),
-                          const SizedBox(height: 16),
-                          filtered.isEmpty
-                              ? _buildEmptyState()
-                              : ListView.builder(
-                                  shrinkWrap: true,
-                                  physics: const NeverScrollableScrollPhysics(),
-                                  itemCount: filtered.length,
-                                  itemBuilder: (_, i) => _buildLogItem(filtered[i]),
-                                ),
-                          const SizedBox(height: 80),
-                        ],
-                      ),
-                    );
-                  },
+            return Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: _buildStatusCardForIndex(_currentIndex),
                 ),
-              ),
-            ],
-          );
-        },
+                Expanded(
+                  child: PageView.builder(
+                    controller: _pageController,
+                    itemCount: _pembimbingList.length,
+                    onPageChanged: (idx) async {
+                      setState(() => _currentIndex = idx);
+                      await _fetchLogsForUrutan(_pembimbingList[idx]['urutan']);
+                    },
+                    itemBuilder: (context, index) {
+                      final pembimbing = _pembimbingList[index];
+                      final urutan = pembimbing['urutan'];
+                      final logs = _logsPerPembimbing[urutan] ?? [];
+
+                      final filtered = _selectedFilter == 'Semua Bimbingan'
+                          ? logs
+                          : _selectedFilter == 'Disetujui'
+                              ? logs.where((l) => _mapStatus(l['status']) == 'approve').toList()
+                              : _selectedFilter == 'Menunggu'
+                                  ? logs.where((l) => _mapStatus(l['status']) == 'pending').toList()
+                                  : logs.where((l) => _mapStatus(l['status']) == 'ditolak').toList();
+
+
+                      final progressCount = logs.where((log) => _mapStatus(log['status']) == 'approve').length;
+                      final progressValue = _targetBimbingan > 0 ? (progressCount / _targetBimbingan).clamp(0.0, 1.0) : 0.0;
+
+                      return SingleChildScrollView(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'Pembimbingan',
+                              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF2C3E50)),
+                            ),
+                            const SizedBox(height: 12),
+                            _buildControls(pembimbing, urutan, progressCount, progressValue),
+                            const SizedBox(height: 16),
+                            filtered.isEmpty
+                                ? _buildEmptyState()
+                                : ListView.builder(
+                                    shrinkWrap: true,
+                                    physics: const NeverScrollableScrollPhysics(),
+                                    itemCount: filtered.length,
+                                    itemBuilder: (_, i) => _buildLogItem(filtered[i]),
+                                  ),
+                            const SizedBox(height: 80),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ],
+            );
+          },
+        ),
       ),
     );
   }
@@ -295,7 +335,7 @@ class _TugasAkhirTabState extends State<TugasAkhirTab> {
 
     final logs = _logsPerPembimbing[urutan] ?? [];
     final progressCount = logs.where((log) => _mapStatus(log['status']) == 'approve').length;
-    final progressValue = (progressCount / _targetBimbingan).clamp(0.0, 1.0);
+    final progressValue = _targetBimbingan > 0 ? (progressCount / _targetBimbingan).clamp(0.0, 1.0) : 0.0;
 
     return Card(
       elevation: 4,

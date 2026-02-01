@@ -8,6 +8,7 @@ import 'package:file_picker/file_picker.dart';
 import '../../../main.dart'; // storageService
 import '../../auth/screens/login_screen.dart';
 import '../../../core/services/auth_service.dart';
+import '../../../core/services/api_service.dart';
 
 class EditLogScreen extends StatefulWidget {
   final Map<String, dynamic> log;
@@ -25,7 +26,6 @@ class _EditLogScreenState extends State<EditLogScreen> {
   PlatformFile? _pickedPlatformFile;
   late String _fileName; // nama file backend (tidak null)
   bool _isLoading = false;
-  final String _baseUrl = 'https://sitamanext.informatikapolines.id';
 
   @override
   void initState() {
@@ -83,7 +83,7 @@ class _EditLogScreenState extends State<EditLogScreen> {
       final id = widget.log['id'] ?? widget.log['log_id'] ?? widget.log['kode'];
       if (id == null) throw Exception('ID log tidak tersedia');
 
-      final url = Uri.parse('$_baseUrl/api/log-bimbingan/$id');
+      final url = Uri.parse('${ApiService.apiHost}/api/log-bimbingan/$id');
       final req = http.MultipartRequest('POST', url);
       req.fields['_method'] = 'PUT';
       req.fields['judul'] = _judulController.text.trim();
@@ -138,7 +138,7 @@ class _EditLogScreenState extends State<EditLogScreen> {
     if (id == null) throw Exception('ID log tidak tersedia');
 
     final res = await http.delete(
-      Uri.parse('$_baseUrl/api/log-bimbingan/$id'),
+      Uri.parse('${ApiService.apiHost}/api/log-bimbingan/$id'),
       headers: {
         'Authorization': 'Bearer $token',
         'Accept': 'application/json',

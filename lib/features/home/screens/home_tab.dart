@@ -10,6 +10,7 @@ import '../../tugas_akhir/screens/daftar_tugas_akhir_screen.dart';
 import '../../pendaftartan_sidang/screens/pendaftaran_sidang_page.dart';
 import '../../pendaftartan_sidang/screens/persyaratan_sidang_screen.dart';
 import '../../../core/services/auth_service.dart';
+import '../../../core/services/api_service.dart';
 
 enum FilterType { none, room, time }
 
@@ -28,7 +29,6 @@ class _HomeTabState extends State<HomeTab> {
   FilterType _activeFilter = FilterType.none;
   String _searchQuery = '';
   late Future<List<dynamic>> _jadwalFuture;
-  final String _baseUrl = 'https://sitamanext.informatikapolines.id';
   String _userName = 'User';
 
   // --- LOGIKA CONSTRAINT BIMBINGAN ---
@@ -122,7 +122,7 @@ class _HomeTabState extends State<HomeTab> {
                       return;
                     }
 
-                    final pendaftaranUrl = Uri.parse('$_baseUrl/api/pendaftaran-sidang');
+                    final pendaftaranUrl = Uri.parse('${ApiService.apiHost}/api/pendaftaran-sidang');
                     final pendaftaranResponse = await http.get(pendaftaranUrl, headers: {
                       'Authorization': 'Bearer $token',
                       'Accept': 'application/json',
@@ -184,7 +184,7 @@ class _HomeTabState extends State<HomeTab> {
       }
 
       // Cek apakah pengguna sudah mendaftar sidang terlebih dahulu
-      final pendaftaranUrl = Uri.parse('$_baseUrl/api/pendaftaran-sidang');
+      final pendaftaranUrl = Uri.parse('${ApiService.apiHost}/api/pendaftaran-sidang');
       final pendaftaranResponse = await http.get(pendaftaranUrl, headers: {
         'Authorization': 'Bearer $token',
         'Accept': 'application/json',
@@ -213,7 +213,7 @@ class _HomeTabState extends State<HomeTab> {
       }
 
       // Cek apakah pengguna sudah memiliki tugas akhir
-      final thesisUrl = Uri.parse('$_baseUrl/api/thesis');
+      final thesisUrl = Uri.parse('${ApiService.apiHost}/api/thesis');
       final thesisResponse = await http.get(thesisUrl, headers: {
         'Authorization': 'Bearer $token',
         'Accept': 'application/json',
@@ -251,7 +251,7 @@ class _HomeTabState extends State<HomeTab> {
       }
 
       // Ambil data pembimbing dan log bimbingan
-      final pembimbingUrl = Uri.parse('$_baseUrl/api/pembimbing');
+      final pembimbingUrl = Uri.parse('${ApiService.apiHost}/api/pembimbing');
       final pembimbingResponse = await http.get(pembimbingUrl, headers: {
         'Authorization': 'Bearer $token',
         'Accept': 'application/json',
@@ -265,7 +265,7 @@ class _HomeTabState extends State<HomeTab> {
 
         for (final pembimbing in pembimbingList) {
           final urutan = pembimbing['urutan'];
-          final logUrl = Uri.parse('$_baseUrl/api/log-bimbingan?urutan=$urutan');
+          final logUrl = Uri.parse('${ApiService.apiHost}/api/log-bimbingan?urutan=$urutan');
           final logResponse = await http.get(logUrl, headers: {
             'Authorization': 'Bearer $token',
             'Accept': 'application/json',
@@ -358,7 +358,7 @@ class _HomeTabState extends State<HomeTab> {
       }
 
       // 2. Ambil Profil dari API
-      final url = Uri.parse('$_baseUrl/api/profil');
+      final url = Uri.parse('${ApiService.apiHost}/api/profil');
       debugPrint('DEBUG: Mengambil data user dari: $url');
       final response = await http.get(url, headers: {
         'Authorization': 'Bearer $token',
@@ -427,7 +427,7 @@ class _HomeTabState extends State<HomeTab> {
         return [];
       }
 
-      final url = Uri.parse('$_baseUrl/api/jadwal-sidang?tanggal=$formattedDate');
+      final url = Uri.parse('${ApiService.apiHost}/api/jadwal-sidang?tanggal=$formattedDate');
       final response = await http.get(url, headers: {
         'Authorization': 'Bearer $token',
         'Accept': 'application/json',

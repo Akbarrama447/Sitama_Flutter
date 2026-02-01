@@ -1,4 +1,6 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/document_model.dart';
 import '../widgets/document_item_widget.dart';
@@ -9,6 +11,7 @@ import '../services/document_list_service.dart';
 import '../../../core/services/upload_status_manager.dart';
 import '../../../main.dart'; // untuk mengakses storageService
 import '../../../core/services/api_service.dart'; // untuk akses API bimbingan
+import '../../../features/log_bimbingan/screens/bimbingan_log.dart'; // untuk navigasi ke halaman bimbingan
 
 class PersyaratanSidangScreen extends StatefulWidget {
   const PersyaratanSidangScreen({super.key});
@@ -132,12 +135,30 @@ class _PersyaratanSidangScreenState extends State<PersyaratanSidangScreen> {
         return;
       }
 
-      // Target jumlah bimbingan yang harus diselesaikan
-      const int targetBimbingan = 8;
+      // Ambil target jumlah bimbingan dari API
+      int targetBimbingan = 8; // default value
 
-      bool allPembimbingCompleted = true;
+      try {
+        final configResponse = await http.get(
+          Uri.parse('${ApiService.apiHost}/api/configs/min-bimbingan'),
+          headers: {
+            'Authorization': 'Bearer $token',
+            'Accept': 'application/json',
+          },
+        );
 
-      // Cek setiap pembimbing
+        if (configResponse.statusCode == 200) {
+          final configData = jsonDecode(configResponse.body);
+          targetBimbingan = int.tryParse(configData['setting_value'].toString()) ?? 8;
+        }
+      } catch (e) {
+        debugPrint('Error fetching min bimbingan config: $e');
+        // Use default value if API call fails
+      }
+
+      int totalApprovedCount = 0;
+
+      // Cek setiap pembimbing dan hitung total bimbingan yang disetujui
       for (var pembimbing in pembimbingList) {
         int urutan = pembimbing['urutan'];
 
@@ -156,15 +177,16 @@ class _PersyaratanSidangScreenState extends State<PersyaratanSidangScreen> {
           return status == 1;
         }).length;
 
-        // Jika jumlah approved log kurang dari target, maka bimbingan belum selesai
-        if (approvedCount < targetBimbingan) {
-          allPembimbingCompleted = false;
-          break;
-        }
+        // Tambahkan ke total approved count
+        totalApprovedCount += approvedCount;
       }
 
+      // Hitung total target bimbingan (target per pembimbing * jumlah pembimbing)
+      int totalTargetBimbingan = targetBimbingan * pembimbingList.length;
+
       setState(() {
-        _bimbinganCompleted = allPembimbingCompleted;
+        // Bimbingan selesai jika total approved count >= total target
+        _bimbinganCompleted = totalApprovedCount >= totalTargetBimbingan;
       });
     } catch (e) {
       debugPrint('Error saat cek status bimbingan: $e');
@@ -424,6 +446,7 @@ class _PersyaratanSidangScreenState extends State<PersyaratanSidangScreen> {
                                 child: ElevatedButton(
                                   onPressed: isRegistrationEnabled
                                       ? () {
+                                          // Semua syarat terpenuhi, navigasi ke halaman pendaftaran sidang
                                           Navigator.push(
                                             context,
                                             MaterialPageRoute(
@@ -431,12 +454,32 @@ class _PersyaratanSidangScreenState extends State<PersyaratanSidangScreen> {
                                                     const PendaftaranSidangPage()),
                                           );
                                         }
-                                      : null,
+                                      : (!_allDocumentsUploaded && !_bimbinganCompleted)
+                                          ? null // Dokumen & Bimbingan belum lengkap, tombol dinonaktifkan
+                                          : !_allDocumentsUploaded
+                                              ? null // Dokumen belum lengkap, tombol dinonaktifkan
+                                              : !_bimbinganCompleted
+                                                  ? () {
+                                                      // Bimbingan belum lengkap, navigasi ke halaman bimbingan
+                                                      Navigator.push(
+                                                        context,
+                                                        MaterialPageRoute(
+                                                            builder: (context) =>
+                                                                const TugasAkhirTab()), // Ini adalah halaman bimbingan
+                                                      );
+                                                    }
+                                                  : null, // Kondisi lain (memuat), tombol dinonaktifkan
                                   style: ElevatedButton.styleFrom(
                                     backgroundColor:
                                         isRegistrationEnabled
                                             ? SidangColors.primaryBtnBlue
-                                            : SidangColors.secondaryBtnGray,
+                                            : (!_allDocumentsUploaded && !_bimbinganCompleted)
+                                                ? SidangColors.secondaryBtnGray // Dokumen & Bimbingan belum lengkap
+                                                : !_allDocumentsUploaded
+                                                    ? SidangColors.secondaryBtnGray // Dokumen belum lengkap
+                                                    : !_bimbinganCompleted
+                                                        ? SidangColors.primaryBtnBlue // Hanya bimbingan belum lengkap, tombol bisa diklik
+                                                        : SidangColors.secondaryBtnGray, // Kondisi lain
                                     foregroundColor: Colors.white,
                                     disabledBackgroundColor: SidangColors.secondaryBtnGray,
                                     disabledForegroundColor: Colors.white,

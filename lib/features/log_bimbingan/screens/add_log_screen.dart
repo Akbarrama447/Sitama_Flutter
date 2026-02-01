@@ -8,6 +8,7 @@ import 'package:file_picker/file_picker.dart';
 import '../../../main.dart';
 import '../../auth/screens/login_screen.dart';
 import '../../../core/services/auth_service.dart';
+import '../../../core/services/api_service.dart';
 
 class AddLogScreen extends StatefulWidget {
   final String pembimbingNama;
@@ -31,7 +32,6 @@ class _AddLogScreenState extends State<AddLogScreen> {
   bool _isLoading = false;
 
   // Base URL backend
-  final String _baseUrl = 'https://sitamanext.informatikapolines.id';
 
   @override
   void initState() {
@@ -88,7 +88,7 @@ class _AddLogScreenState extends State<AddLogScreen> {
         return;
       }
 
-      var request = http.MultipartRequest('POST', Uri.parse('$_baseUrl/api/log-bimbingan'));
+      var request = http.MultipartRequest('POST', Uri.parse('${ApiService.apiHost}/api/log-bimbingan'));
 
       // --- Fields ---
       request.fields['judul'] = _judulController.text.trim();

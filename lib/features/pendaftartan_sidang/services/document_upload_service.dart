@@ -7,7 +7,7 @@ import '../../../main.dart'; // untuk mengakses storageService
 import '../../../core/services/api_service.dart';
 
 class DocumentUploadService {
-  static const String baseUrl = 'https://sitamanext.informatikapolines.id'; // Sesuaikan dengan API kamu
+  static String get baseUrl => ApiService.apiHost; // Sesuaikan dengan API kamu
 
   // Tambahkan flag untuk menentukan apakah menggunakan API atau tidak
   static bool useApi = false; // Set ke false untuk menggunakan mode lokal sementara

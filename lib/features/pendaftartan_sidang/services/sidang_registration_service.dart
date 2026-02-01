@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../../../main.dart'; // untuk mengakses storageService
+import '../../../core/services/api_service.dart';
 
 class SidangRegistrationService {
   // Fungsi untuk mendaftarkan sidang
@@ -51,7 +52,7 @@ class SidangRegistrationService {
       }
 
       final response = await http.post(
-        Uri.parse('https://sitamanext.informatikapolines.id/api/pendaftaran-sidang'),
+        Uri.parse('${ApiService.apiHost}/api/pendaftaran-sidang'),
         headers: {
           'Authorization': 'Bearer $token',
           'Accept': 'application/json',

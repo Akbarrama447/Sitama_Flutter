@@ -77,26 +77,116 @@ class _DetailTugasAkhirScreenState extends State<DetailTugasAkhirScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey.shade100, // Background abu-abu muda
+      backgroundColor: Colors.grey.shade100, // Background abu-abu muda seperti sebelumnya
       body: SafeArea(
-        child: Stack(
-          children: [
-            // Konten Utama (Header dan Detail)
-            isLoading
-                ? const Center(child: CircularProgressIndicator())
-                : errorMessage.isNotEmpty
-                    ? Center(
-                        child: Padding(
-                          padding: const EdgeInsets.all(20.0),
+        child: CustomScrollView(
+          slivers: [
+            SliverAppBar(
+              expandedHeight: 180,
+              pinned: true,
+              backgroundColor: const Color(0xFFBBDEFB), // Warna biru muda
+              flexibleSpace: FlexibleSpaceBar(
+                background: Container(
+                  decoration: const BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        Color(0xFFBBDEFB), // Biru muda di atas
+                        Color(0xFFE3F2FD), // Biru muda di bawah
+                      ],
+                    ),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.only(bottom: 40, top: 60),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 20),
                           child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                errorMessage,
-                                textAlign: TextAlign.center,
+                                _namaMahasiswa?.toUpperCase() ?? 'NAMA MAHASISWA',
                                 style: const TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w500,
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                  color: Color(0xFF2196F3), // Warna biru sesuai permintaan
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                '${_nim ?? '0.0.0.0'} - ${_prodi ?? 'D3 Teknik Informatika'}',
+                                style: const TextStyle(
+                                  fontSize: 14,
+                                  color: Color(0xFF2196F3), // Warna biru sesuai permintaan
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              leading: IconButton(
+                icon: const Icon(
+                  Icons.arrow_back,
+                  color: Color(0xFF2196F3), // Warna biru sesuai permintaan
+                ),
+                onPressed: () {
+                  Navigator.pop(context);
+                },
+              ),
+              title: Text(
+                'Detail Tugas Akhir',
+                style: const TextStyle(
+                  color: Color(0xFF2196F3), // Warna biru sesuai permintaan
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              centerTitle: true,
+            ),
+            SliverToBoxAdapter(
+              child: isLoading
+                  ? const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 50),
+                      child: Center(child: CircularProgressIndicator()),
+                    )
+                  : errorMessage.isNotEmpty
+                      ? Padding(
+                          padding: const EdgeInsets.all(20.0),
+                          child: Column(
+                            children: [
+                              Container(
+                                width: double.infinity,
+                                padding: const EdgeInsets.all(20),
+                                decoration: BoxDecoration(
+                                  color: Colors.red.shade100,
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Column(
+                                  children: [
+                                    Icon(
+                                      Icons.warning_rounded,
+                                      size: 48,
+                                      color: Colors.red,
+                                    ),
+                                    const SizedBox(height: 16),
+                                    Text(
+                                      errorMessage,
+                                      textAlign: TextAlign.center,
+                                      style: const TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w500,
+                                        color: Colors.red,
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ),
                               const SizedBox(height: 20),
@@ -112,41 +202,26 @@ class _DetailTugasAkhirScreenState extends State<DetailTugasAkhirScreen> {
                                   );
                                 },
                                 style: ElevatedButton.styleFrom(
-                                  backgroundColor: Colors.blue,
+                                  backgroundColor: const Color(0xFF2196F3), // Warna biru sesuai permintaan
                                   foregroundColor: Colors.white,
+                                  padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
                                 ),
                                 child: const Text('Daftar Tugas Akhir'),
                               ),
                             ],
                           ),
-                        ),
-                      )
-                    : thesisData == null
-                        ? const Center(
-                            child: Text('Data tugas akhir tidak ditemukan'))
-                        : _buildContent(context),
-
-            // Back button (Ditempatkan di atas konten untuk akses mudah)
-            Positioned(
-              top: 10.0,
-              left: 10.0,
-              child: InkWell(
-                onTap: () {
-                  Navigator.pop(context);
-                },
-                child: Container(
-                  padding: const EdgeInsets.all(8.0),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.7),
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(
-                    Icons.arrow_back,
-                    size: 24,
-                    color: Colors.black87,
-                  ),
-                ),
-              ),
+                        )
+                      : thesisData == null
+                          ? const Center(
+                              child: Padding(
+                                padding: EdgeInsets.all(20),
+                                child: Text('Data tugas akhir tidak ditemukan'),
+                              ),
+                            )
+                          : _buildContent(context),
             ),
           ],
         ),
@@ -178,149 +253,249 @@ class _DetailTugasAkhirScreenState extends State<DetailTugasAkhirScreen> {
       }
     }
 
-    return SingleChildScrollView(
+    return Padding(
+      padding: const EdgeInsets.all(16.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // 1. Header Mahasiswa (sesuai desain)
-          _buildHeaderMahasiswa(namaMahasiswa, nim, prodi),
-
-          // 2. Konten Detail (di dalam Card)
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20.0),
-            child: Card(
-              elevation: 0, // Dibuat flat
-              color: Colors.white,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12.0),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.all(24.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Judul Tugas Akhir
-                    _buildDetailItem(
-                      'Judul Tugas Akhir',
-                      Text(thesisData?['judul'] ?? 'Judul tidak tersedia'),
-                      Colors.transparent,
-                    ),
-
-                    // Deskripsi Tugas Akhir
-                    _buildDetailItem(
-                      'Deskripsi',
-                      Text(
-                        thesisData?['deskripsi'] ?? 'Deskripsi tidak tersedia',
-                        style: const TextStyle(fontSize: 16),
+          // Kartu Informasi Tugas Akhir
+          Card(
+            elevation: 2,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(20.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Judul Tugas Akhir
+                  _buildDetailItem(
+                    'Judul Tugas Akhir',
+                    Text(
+                      thesisData?['judul'] ?? 'Judul tidak tersedia',
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
+                        color: Colors.black87,
                       ),
-                      Colors.grey.shade200,
                     ),
+                  ),
 
-                    // Status
-                    _buildDetailItem(
-                      'Status',
-                      Text(
-                        thesisData?['status'] ?? '-',
-                        style: const TextStyle(
-                            fontSize: 16, fontWeight: FontWeight.bold),
+                  const SizedBox(height: 16),
+
+                  // Deskripsi Tugas Akhir
+                  _buildDetailItem(
+                    'Deskripsi',
+                    Text(
+                      thesisData?['deskripsi'] ?? 'Deskripsi tidak tersedia',
+                      style: const TextStyle(
+                        fontSize: 16,
+                        color: Colors.black87,
                       ),
-                      Colors.transparent,
                     ),
+                  ),
 
-                    // Dosen Pembimbing
-                   _buildDetailItem(
-                      'Dosen Pembimbing',
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          // --- Pembimbing 1 ---
-                          _buildPembimbingItem(
-                            1,
-                            thesisData?['pembimbing_1'],
-                            thesisData?['pembimbing_1_nip'],
-                          ),
+                  const SizedBox(height: 16),
 
-                          const SizedBox(height: 8),
-
-                          // --- Pembimbing 2 ---
-                          _buildPembimbingItem(
-                            2,
-                            thesisData?['pembimbing_2'],
-                            thesisData?['pembimbing_2_nip'],
-                          ),
-                        ],
+                  // Status
+                  _buildDetailItem(
+                    'Status',
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: _getStatusColor(thesisData?['status']),
+                        borderRadius: BorderRadius.circular(20),
                       ),
-                      Colors.grey.shade200,
-                    ),
-
-                    // Dosen Penguji
-                    _buildDetailItem(
-                      'Dosen Penguji',
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: (thesisData?['penguji'] as List? ?? [])
-                            .asMap()
-                            .entries
-                            .map<Widget>((entry) {
-                          int index = entry.key;
-                          var penguji = entry.value;
-                          return Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                '${index + 1}. ${penguji['nama'] ?? "-"}',
-                                style: const TextStyle(fontSize: 16),
-                              ),
-                              if (penguji['nip'] != null)
-                                Text(
-                                  'NIP: ${penguji['nip'] ?? "-"}',
-                                  style: const TextStyle(
-                                      fontSize: 14, color: Colors.grey),
-                                ),
-                            ],
-                          );
-                        }).toList(),
+                      child: Text(
+                        thesisData?['status']?.toUpperCase() ?? '-',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                          color: _getStatusTextColor(thesisData?['status']),
+                        ),
                       ),
-                      Colors.grey.shade200,
                     ),
-
-                    // Anggota Kelompok
-                    _buildDetailItem(
-                      'Anggota Kelompok',
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: (thesisData?['anggota_kelompok'] as List? ??
-                                [])
-                            .asMap()
-                            .entries
-                            .map<Widget>((entry) {
-                          int index = entry.key;
-                          var anggota = entry.value;
-                          return Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                '${index + 1}. ${anggota['nama'] ?? "-"}',
-                                style: const TextStyle(fontSize: 16),
-                              ),
-                              if (anggota['nim'] != null)
-                                Text(
-                                  'NIM: ${anggota['nim'] ?? "-"}',
-                                  style: const TextStyle(
-                                      fontSize: 14, color: Colors.grey),
-                                ),
-                            ],
-                          );
-                        }).toList(),
-                      ),
-                      Colors.grey.shade200,
-                    ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
           ),
 
+          const SizedBox(height: 16),
+
+          // Kartu Dosen Pembimbing
+          Card(
+            elevation: 2,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(20.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Dosen Pembimbing',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF2196F3), // Warna biru sesuai permintaan
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+
+                  // --- Pembimbing 1 ---
+                  _buildPembimbingItem(
+                    1,
+                    thesisData?['pembimbing_1'],
+                    thesisData?['pembimbing_1_nip'],
+                  ),
+                  const SizedBox(height: 12),
+
+                  // --- Pembimbing 2 ---
+                  _buildPembimbingItem(
+                    2,
+                    thesisData?['pembimbing_2'],
+                    thesisData?['pembimbing_2_nip'],
+                  ),
+                ],
+              ),
+            ),
+          ),
+
+          const SizedBox(height: 16),
+
+          // Kartu Dosen Penguji
+          Card(
+            elevation: 2,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(20.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Dosen Penguji',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF2196F3), // Warna biru sesuai permintaan
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+
+                  // Daftar Penguji
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: (thesisData?['penguji'] as List? ?? [])
+                        .asMap()
+                        .entries
+                        .map<Widget>((entry) {
+                      int index = entry.key;
+                      var penguji = entry.value;
+                      return Container(
+                        margin: const EdgeInsets.only(bottom: 12),
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.grey.shade50,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              '${index + 1}. ${penguji['nama'] ?? "-"}',
+                              style: const TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w500,
+                                color: Color(0xFF2196F3), // Warna biru sesuai permintaan
+                              ),
+                            ),
+                            if (penguji['nip'] != null)
+                              Text(
+                                'NIP: ${penguji['nip'] ?? "-"}',
+                                style: const TextStyle(
+                                    fontSize: 14, color: Colors.grey),
+                              ),
+                          ],
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                ],
+              ),
+            ),
+          ),
+
+          const SizedBox(height: 16),
+
+          // Kartu Anggota Kelompok
+          Card(
+            elevation: 2,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(20.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Anggota Kelompok',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF2196F3), // Warna biru sesuai permintaan
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+
+                  // Daftar Anggota
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: (thesisData?['anggota_kelompok'] as List? ??
+                            [])
+                        .asMap()
+                        .entries
+                        .map<Widget>((entry) {
+                      int index = entry.key;
+                      var anggota = entry.value;
+                      return Container(
+                        margin: const EdgeInsets.only(bottom: 12),
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.grey.shade50,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              '${index + 1}. ${anggota['nama'] ?? "-"}',
+                              style: const TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w500,
+                                color: Color(0xFF2196F3), // Warna biru sesuai permintaan
+                              ),
+                            ),
+                            if (anggota['nim'] != null)
+                              Text(
+                                'NIM: ${anggota['nim'] ?? "-"}',
+                                style: const TextStyle(
+                                    fontSize: 14, color: Colors.grey),
+                              ),
+                          ],
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                ],
+              ),
+            ),
+          ),
         ],
       ),
     );
@@ -343,107 +518,105 @@ class _DetailTugasAkhirScreenState extends State<DetailTugasAkhirScreen> {
         nip = oldNip; // Ambil dari key terpisah (backward compatibility)
       }
     } else {
-      return Text('$urutan. -');
+      return Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: Colors.grey.shade50,
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Text('$urutan. -'),
+      );
     }
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          '$urutan. $nama',
-          style: const TextStyle(fontSize: 16),
-        ),
-        if (nip != null)
-          Text(
-            'NIP: $nip',
-            style: const TextStyle(fontSize: 14, color: Colors.grey),
-          ),
-      ],
-    );
-  }
-
-  // Widget untuk Header Mahasiswa (Biru/Gradient)
-  Widget _buildHeaderMahasiswa(String nama, String nim, String prodi) {
     return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.only(top: 80, left: 20, right: 20, bottom: 40),
-      margin: const EdgeInsets.only(bottom: 20),
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: const Color(0xFFE3F2FD), // Warna Biru Muda
-        borderRadius: const BorderRadius.only(
-          bottomLeft: Radius.circular(30),
-          bottomRight: Radius.circular(30),
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.1),
-            spreadRadius: 1,
-            blurRadius: 5,
-            offset: const Offset(0, 3),
-          ),
-        ],
+        color: Colors.grey.shade50,
+        borderRadius: BorderRadius.circular(8),
       ),
-      child: Container(
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          color: const Color(0xFF1976D2), // Warna Biru Tua
-          borderRadius: BorderRadius.circular(10),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              nama.toUpperCase(),
-              style: const TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
-              ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            '$urutan. $nama',
+            style: const TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w500,
+              color: Color(0xFF2196F3), // Warna biru sesuai permintaan
             ),
-            const SizedBox(height: 4),
+          ),
+          if (nip != null)
             Text(
-              '$nim - $prodi',
-              style: const TextStyle(
-                fontSize: 14,
-                color: Colors.white70,
-              ),
+              'NIP: $nip',
+              style: const TextStyle(fontSize: 14, color: Colors.grey),
             ),
-          ],
-        ),
+        ],
       ),
     );
   }
 
   // Widget untuk setiap baris detail
-  Widget _buildDetailItem(
-      String title, Widget contentWidget, Color containerColor) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 20.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            title,
-            style: const TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w500,
-              color: Colors.black,
-            ),
+  Widget _buildDetailItem(String title, Widget contentWidget) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          title,
+          style: const TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+            color: Color(0xFF2196F3), // Warna biru sesuai permintaan
           ),
-          const SizedBox(height: 8),
-          Container(
-            width: double.infinity,
-            padding: containerColor != Colors.transparent
-                ? const EdgeInsets.all(12.0)
-                : EdgeInsets.zero,
-            decoration: BoxDecoration(
-              color: containerColor,
-              borderRadius: BorderRadius.circular(8.0),
-            ),
-            child: contentWidget,
+        ),
+        const SizedBox(height: 8),
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(12.0),
+          decoration: BoxDecoration(
+            color: Colors.grey.shade50,
+            borderRadius: BorderRadius.circular(8.0),
           ),
-        ],
-      ),
+          child: contentWidget,
+        ),
+      ],
     );
+  }
+
+  // Fungsi untuk menentukan warna status
+  Color _getStatusColor(String? status) {
+    if (status == null) return Colors.grey.shade300;
+
+    switch (status.toLowerCase()) {
+      case 'disetujui':
+      case 'approved':
+        return const Color(0xFFE3F2FD); // Biru muda
+      case 'diajukan':
+      case 'submitted':
+        return const Color(0xFFFFF3E0); // Oranye muda
+      case 'ditolak':
+      case 'rejected':
+        return const Color(0xFFFCE4EC); // Merah muda
+      default:
+        return Colors.grey.shade100;
+    }
+  }
+
+  // Fungsi untuk menentukan warna teks status
+  Color _getStatusTextColor(String? status) {
+    if (status == null) return Colors.grey.shade700;
+
+    switch (status.toLowerCase()) {
+      case 'disetujui':
+      case 'approved':
+        return const Color(0xFF2196F3); // Biru sesuai permintaan
+      case 'diajukan':
+      case 'submitted':
+        return const Color(0xFFEF6C00); // Oranye gelap
+      case 'ditolak':
+      case 'rejected':
+        return const Color(0xFFC62828); // Merah gelap
+      default:
+        return Colors.grey.shade700;
+    }
   }
 }
