@@ -495,10 +495,11 @@ class _RevisiSidangScreenState extends State<RevisiSidangScreen> {
     // Debug log untuk melihat struktur data revisi
     print('Debug - Data revisi: $revisiData');
 
-    // Pilih file dari perangkat
+    // Pilih file dari perangkat - dengan opsi untuk membaca data langsung
     FilePickerResult? result = await FilePicker.platform.pickFiles(
       type: FileType.custom,
       allowedExtensions: ['pdf'], // Sesuaikan ekstensi yang diizinkan
+      withData: true, // Membaca file sebagai bytes langsung
     );
 
     if (result != null) {
@@ -534,9 +535,23 @@ class _RevisiSidangScreenState extends State<RevisiSidangScreen> {
         return;
       }
 
-      // Pastikan file.bytes tidak null sebelum digunakan
-      if (platformFile.bytes == null) {
-        _showErrorDialog('Gagal membaca file. Silakan pilih file dari penyimpanan internal.');
+      // Cek apakah file bisa diakses - coba dengan path jika bytes null
+      List<int>? fileBytes;
+
+      if (platformFile.bytes != null) {
+        // Jika bytes tersedia, gunakan langsung
+        fileBytes = platformFile.bytes;
+      } else if (platformFile.path != null) {
+        // Jika bytes null, coba baca file dari path
+        try {
+          File file = File(platformFile.path!);
+          fileBytes = await file.readAsBytes();
+        } catch (e) {
+          _showErrorDialog('Gagal membaca file dari penyimpanan. Silakan pilih file dari penyimpanan internal. Error: $e');
+          return; // Hentikan proses upload
+        }
+      } else {
+        _showErrorDialog('Gagal membaca file. Tidak ada data file atau path yang tersedia.');
         return; // Hentikan proses upload
       }
 
@@ -562,7 +577,7 @@ class _RevisiSidangScreenState extends State<RevisiSidangScreen> {
 
         print('Debug - Memulai upload file ke API...');
 
-        // Buat request multipart langsung dari bytes
+        // Buat request multipart dari bytes yang sudah dibaca
         var request = http.MultipartRequest(
           'POST',
           Uri.parse(ApiService.uploadRevisiUrl),
@@ -573,11 +588,11 @@ class _RevisiSidangScreenState extends State<RevisiSidangScreen> {
         // Tambahkan ID revisi ke request
         request.fields['revisi_id'] = revisiId;
 
-        // Tambahkan file ke request langsung dari bytes
+        // Tambahkan file ke request dari bytes yang sudah dibaca
         request.files.add(
           http.MultipartFile.fromBytes(
             'file_revisi',
-            platformFile.bytes!,
+            fileBytes!,
             filename: platformFile.name,
           ),
         );

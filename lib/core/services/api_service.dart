@@ -9,7 +9,7 @@ class ApiService {
   // endpoint production = https://sitamanext.informatikapolines.id
 
 
-  static const String apiHost = 'http://localhost:8000';
+  static const String apiHost = 'https://sitamanext.informatikapolines.id';
   static const String baseUrl = '$apiHost/api';
   // ----------------------------------------
   // --- ENDPOINTS ---
@@ -26,7 +26,7 @@ class ApiService {
   print("DEBUG LOGIN: Email: $email, Password: $password");
 
   if (email == null || password == null) {
-    throw Exception("Email atau Password tidak boleh null!");
+    throw Exception("Email atau Password tidak boleh kosong!");
   }
 
   try {

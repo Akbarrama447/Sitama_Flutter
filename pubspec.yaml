@@ -57,6 +57,9 @@ dev_dependencies:
   # rules and activating additional ones.
   flutter_lints: ^3.0.0 # Versi disesuaikan agar compatible
 
+  # Package untuk mengganti icon aplikasi
+  flutter_launcher_icons: ^0.13.1
+
 # The following section is specific to Flutter packages.
 flutter:
 
@@ -68,7 +71,8 @@ flutter:
     - assets/logo.png
     - assets/google.png
     - assets/sitama.png
-    
+    - assets/logoapk.png
+
 
   # To add custom fonts to your application, add a fonts section here,
   # in this "flutter" section. (Komentar lain saya biarkan untuk referensi)
@@ -76,3 +80,10 @@ flutter:
   #   - family: Schyler
   #     fonts:
   #       - asset: fonts/Schyler-Regular.ttf
+
+# Konfigurasi untuk flutter_launcher_icons
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: "assets/logoapk.png"
+  min_sdk_android: 21 # android min version
